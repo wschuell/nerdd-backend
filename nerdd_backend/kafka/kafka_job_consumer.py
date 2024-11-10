@@ -15,7 +15,7 @@ class KafkaJobConsumer:
         pass
 
     async def consume(self, message):
-        if message["action_type"] in ["create", "update"]:
+        if message["action_type"] in "create":
             logger.info(f"Upsert job {message}")
             message.pop("action_type")
             await repository.upsert_job(message)
