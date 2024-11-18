@@ -21,6 +21,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
+    "nerdd-module>=0.1.0",
+    "nerdd-link>=0.1.0",
     "fastapi~=0.103.2",
     "uvicorn[standard]~=0.23.2",
     "aiokafka~=0.8.1",
@@ -38,7 +40,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mypy~=0.981", "black~=22.6.0", "ipykernel~=6.19.4"]
+dev = ["mypy~=0.981", "ruff", "ipykernel~=6.19.4"]
 test = [
     "pytest",
     "pytest-watch",
@@ -50,6 +52,32 @@ test = [
     "asgi_lifespan~=2.1.0",
 ]
 
-[tool.black]
-line-length = 88
-target-version = ['py38']
+#
+# TOOLS
+#
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nerdd_backend*"]
+
+[tool.setuptools.package-data]
+nerdd_module = ["py.typed"]
+
+
+[tool.ruff]
+line-length = 100
+extend-exclude = ["tests", "nerdd_backend/tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "T20", # no print statements
+]
+ignore = [
+    "F403", # I often use 'from .submodule import *' in __init__.py files
+    "C408", # I prefer dict(a=5) over {'a': 5}
+]
