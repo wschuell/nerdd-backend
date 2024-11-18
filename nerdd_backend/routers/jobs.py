@@ -15,9 +15,7 @@ jobs_router = APIRouter(prefix="/jobs")
 
 
 async def augment_job(job, page_size, request: Request):
-    num_entries_processed = await repository.get_num_processed_entries_by_job_id(
-        job["id"]
-    )
+    num_entries_processed = await repository.get_num_processed_entries_by_job_id(job["id"])
     job["num_entries_processed"] = num_entries_processed
 
     # TODO
@@ -33,9 +31,7 @@ async def augment_job(job, page_size, request: Request):
 
 @jobs_router.post("", include_in_schema=False)
 @jobs_router.post("/")
-async def create_job(
-    job_type: str, source_id: str, params: Dict[str, Any], request: Request
-):
+async def create_job(job_type: str, source_id: str, params: Dict[str, Any], request: Request):
     job_id = uuid4()
 
     # check if module exists

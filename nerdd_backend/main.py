@@ -50,9 +50,7 @@ async def lifespan(app: FastAPI):
     await start_tasks
 
     logger.info("Running tasks")
-    run_tasks = asyncio.gather(
-        *[asyncio.create_task(lifespan.run()) for lifespan in lifespans]
-    )
+    run_tasks = asyncio.gather(*[asyncio.create_task(lifespan.run()) for lifespan in lifespans])
 
     yield
 
