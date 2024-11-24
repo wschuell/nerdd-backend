@@ -3,10 +3,10 @@ from time import time
 from typing import Any, Dict
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Body, HTTPException, Request
+from nerdd_link import JobMessage
+from pydantic import BaseModel
 
-from ..data import repository
-from ..kafka import get_kafka_producer
 from ..settings import PAGE_SIZE
 
 __all__ = ["jobs_router"]
@@ -15,7 +15,12 @@ jobs_router = APIRouter(prefix="/jobs")
 
 
 async def augment_job(job, page_size, request: Request):
-    num_entries_processed = await repository.get_num_processed_entries_by_job_id(job["id"])
+    app = request.app
+    repository = app.state.repository
+
+    num_entries_processed = await repository.get_num_processed_entries_by_job_id(
+        job["id"]
+    )
     job["num_entries_processed"] = num_entries_processed
 
     # TODO
@@ -29,15 +34,39 @@ async def augment_job(job, page_size, request: Request):
     return job
 
 
+class CreateJobRequest(BaseModel):
+    job_type: str
+    source_id: str
+    params: Dict[str, Any]
+
+
 @jobs_router.post("", include_in_schema=False)
 @jobs_router.post("/")
-async def create_job(job_type: str, source_id: str, params: Dict[str, Any], request: Request):
+async def create_job(request: Request, request_data: CreateJobRequest = Body()):
+    job_type = request_data.job_type
+    source_id = request_data.source_id
+    params = request_data.params
+
+    app = request.app
+    repository = app.state.repository
+    channel = app.state.channel
+
     job_id = uuid4()
 
     # check if module exists
     module = await repository.get_module_by_id(job_type)
     if module is None:
-        raise HTTPException(status_code=404, detail="Module not found")
+        all_modules = await repository.get_all_modules()
+        valid_options = [module["id"] for module in all_modules]
+        raise HTTPException(
+            status_code=404,
+            detail=f"Module {job_type} not found. Valid options are: {', '.join(valid_options)}",
+        )
+
+    # check if source exists
+    source = await repository.get_source_by_id(source_id)
+    if source is None:
+        raise HTTPException(status_code=404, detail="Source not found")
 
     result = dict(
         id=str(job_id),
@@ -46,26 +75,29 @@ async def create_job(job_type: str, source_id: str, params: Dict[str, Any], requ
         params=params,
         timestamp=int(time()),
     )
+    # TODO: necessary?
     await repository.upsert_job(result)
 
     # send job to kafka
-    action = dict(
-        id=str(job_id),
-        job_type=job_type,
-        source_id=source_id,
-        action_type="create",
-        params=params,
-        timestamp=int(time()),
+    await channel.jobs_topic().send(
+        JobMessage(
+            id=str(job_id),
+            job_type=job_type,
+            source_id=source_id,
+            params=params,
+            timestamp=int(time()),
+        )
     )
-    producer = await get_kafka_producer()
-    await producer.send_and_wait("jobs", action)
 
     # return the response
     return await augment_job(result, PAGE_SIZE, request)
 
 
 @jobs_router.delete("/{job_id}")
-async def delete_job(job_id: str):
+async def delete_job(job_id: str, request: Request):
+    app = request.app
+    repository = app.state.repository
+
     job = await repository.get_job_by_id(job_id)
 
     if job is None:
@@ -77,6 +109,9 @@ async def delete_job(job_id: str):
 
 @jobs_router.get("/{job_id}")
 async def get_job(job_id: str, request: Request):
+    app = request.app
+    repository = app.state.repository
+
     job = await repository.get_job_by_id(job_id)
 
     if job is None:

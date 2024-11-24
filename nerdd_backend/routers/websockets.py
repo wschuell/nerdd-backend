@@ -1,6 +1,5 @@
-from fastapi import APIRouter, HTTPException, Query, Request, WebSocket
+from fastapi import APIRouter, HTTPException, Query, WebSocket
 
-from ..data import repository
 from ..settings import PAGE_SIZE
 from .jobs import get_job
 
@@ -12,6 +11,9 @@ websockets_router = APIRouter(prefix="/websocket")
 @websockets_router.websocket("/jobs/{job_id}")
 @websockets_router.websocket("/jobs/{job_id}/")
 async def get_job_ws(websocket: WebSocket, job_id: str):
+    app = websocket.app
+    repository = app.state.repository
+
     await websocket.accept()
 
     job = await get_job(job_id, websocket)
@@ -26,6 +28,9 @@ async def get_job_ws(websocket: WebSocket, job_id: str):
 @websockets_router.websocket("/jobs/{job_id}/results")
 @websockets_router.websocket("/jobs/{job_id}/results/")
 async def get_results_ws(websocket: WebSocket, job_id: str, page: int = Query()):
+    app = websocket.app
+    repository = app.state.repository
+
     await websocket.accept()
 
     job = await repository.get_job_by_id(job_id)
@@ -35,7 +40,7 @@ async def get_results_ws(websocket: WebSocket, job_id: str, page: int = Query())
 
     # num_entries might not be available, yet
     # we assume it to be positive infinity in that case
-    num_entries = job.get("num_entries", float("inf"))
+    num_entries = job.get("num_entries_total", float("inf"))
 
     page_zero_based = page - 1
 
