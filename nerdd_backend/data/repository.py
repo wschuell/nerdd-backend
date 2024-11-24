@@ -36,10 +36,6 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def get_most_recent_version(self, module_id):
-        pass
-
-    @abstractmethod
     async def upsert_module(self, module):
         pass
 
