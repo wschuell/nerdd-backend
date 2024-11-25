@@ -1,4 +1,10 @@
 from abc import ABC, abstractmethod
+from typing import AsyncIterable, List, Optional
+
+from .job import Job
+from .module import Module
+from .result import Result
+from .source import Source
 
 __all__ = ["Repository"]
 
@@ -15,15 +21,15 @@ class Repository(ABC):
     # MODULES
     #
     @abstractmethod
-    async def get_module_changes(self):
+    def get_module_changes(self) -> AsyncIterable:
         pass
 
     @abstractmethod
-    async def get_all_modules(self):
+    async def get_all_modules(self) -> List[Module]:
         pass
 
     @abstractmethod
-    async def get_module_by_id(self, id):
+    async def get_module_by_id(self, module_id) -> Module:
         """
         Returns
         -------
@@ -33,63 +39,68 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def upsert_module(self, module):
+    async def upsert_module(self, module: Module) -> None:
         pass
 
     #
     # JOBS
     #
     @abstractmethod
-    async def upsert_job(self, job):
+    def get_job_changes(self, job_id: str) -> AsyncIterable:
         pass
 
     @abstractmethod
-    async def get_job_by_id(self, id):
+    async def upsert_job(self, job: Job):
         pass
 
     @abstractmethod
-    async def delete_job_by_id(self, id):
+    async def get_job_by_id(self, job_id: str) -> Job:
+        pass
+
+    @abstractmethod
+    async def delete_job_by_id(self, job_id) -> None:
         pass
 
     #
     # SOURCES
     #
     @abstractmethod
-    async def upsert_source(self, source):
+    async def upsert_source(self, source: Source) -> None:
         pass
 
     @abstractmethod
-    async def get_source_by_id(self, id):
+    async def get_source_by_id(self, source_id: str) -> Source:
         pass
 
     @abstractmethod
-    async def delete_source_by_id(self, id):
+    async def delete_source_by_id(self, source_id: str) -> None:
         pass
 
     #
     # RESULTS
     #
-
     @abstractmethod
-    async def get_all_results_by_job_id(self, job_id):
+    async def get_num_processed_entries_by_job_id(self, job_id: str) -> int:
         pass
 
     @abstractmethod
-    async def get_num_processed_entries_by_job_id(self, job_id):
+    async def get_results_by_job_id(
+        self,
+        job_id: str,
+        start_mol_id: Optional[int] = None,
+        end_mol_id: Optional[int] = None,
+    ) -> List[Result]:
         pass
 
     @abstractmethod
-    async def get_results_by_job_id(self, job_id, start_mol_id, end_mol_id):
+    async def upsert_result(self, result: Result) -> None:
         pass
 
     @abstractmethod
-    async def upsert_result(self, result):
-        pass
-
-    @abstractmethod
-    async def get_job_changes(self, job_id):
-        pass
-
-    @abstractmethod
-    async def get_result_changes(self, job_id, start_mol_id, end_mol_id):
+    def get_result_changes(
+        self,
+        job_id,
+        start_mol_id: Optional[int] = None,
+        end_mol_id: Optional[int] = None,
+    ) -> AsyncIterable:
         pass
