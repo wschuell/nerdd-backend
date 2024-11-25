@@ -62,9 +62,7 @@ def get_dynamic_router(module):
     )
     QueryModelPost = create_model(
         "QueryModelForm",
-        __validators__={
-            "validate_to_json": model_validator(mode="before")(validate_to_json)
-        },
+        __validators__={"validate_to_json": model_validator(mode="before")(validate_to_json)},
         inputs=(List[str], []),
         sources=(List[str], []),
         **field_definitions,
@@ -150,11 +148,7 @@ def get_dynamic_router(module):
     router.websocket(f"/websocket/{module['name']}" "/jobs/{job_id}")(get_job_ws)
     router.websocket(f"/websocket/{module['name']}" "/jobs/{job_id}/")(get_job_ws)
 
-    router.websocket(f"/websocket/{module['name']}" "/jobs/{job_id}/results")(
-        get_results_ws
-    )
-    router.websocket(f"/websocket/{module['name']}" "/jobs/{job_id}/results/")(
-        get_results_ws
-    )
+    router.websocket(f"/websocket/{module['name']}" "/jobs/{job_id}/results")(get_results_ws)
+    router.websocket(f"/websocket/{module['name']}" "/jobs/{job_id}/results/")(get_results_ws)
 
     return router
