@@ -3,7 +3,7 @@ from nerdd_backend.data import Repository
 from nerdd_module.tests import MolWeightModel
 from pytest_bdd import given
 
-from ..async_step import async_step
+from .async_step import async_step
 
 
 class JsonRepository(Repository):
