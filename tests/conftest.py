@@ -6,7 +6,6 @@
 # instead, we use pytest_plugins to make this work
 pytest_plugins = [
     "tests.steps",
-    "tests.mocks",
     "nerdd_module.tests",
     "nerdd_link.tests",
 ]
