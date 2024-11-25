@@ -4,9 +4,6 @@ __all__ = ["Repository"]
 
 
 class Repository(ABC):
-    def __init__(self):
-        pass
-
     #
     # INITIALIZATION
     #

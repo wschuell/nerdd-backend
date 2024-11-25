@@ -84,6 +84,15 @@ ignore = [
     "C408", # I prefer dict(a=5) over {'a': 5}
 ]
 
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = [
+    # Whitelisted default arguments
+    "fastapi.Body",
+    "fastapi.Query",
+    "fastapi.Header",
+    "fastapi.Depends",
+]
+
 [tool.pytest.ini_options]
 log_cli = 1
 log_cli_level = "INFO"

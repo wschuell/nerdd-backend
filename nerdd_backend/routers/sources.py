@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import shutil
 from io import BytesIO
 from time import time
 from typing import List, Optional
