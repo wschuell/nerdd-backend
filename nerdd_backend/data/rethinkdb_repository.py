@@ -53,8 +53,13 @@ class RethinkDbRepository(Repository):
         cursor = await self.r.db(RETHINKDB_DB).table("modules").run(self.connection)
         return [item async for item in cursor]
 
-    async def get_module_by_id(self, id):
-        return await self.r.db(RETHINKDB_DB).table("modules").get(id).run(self.connection)
+    async def get_module_by_id(self, module_id):
+        return (
+            await self.r.db(RETHINKDB_DB)
+            .table("modules")
+            .get(module_id)
+            .run(self.connection)
+        )
 
     async def create_module_table(self):
         try:
@@ -62,20 +67,16 @@ class RethinkDbRepository(Repository):
         except ReqlOpFailedError:
             pass
 
-    async def get_most_recent_version(self, module_id):
+    async def get_most_recent_version(self, module_name):
         # TODO: incorporate versioning
-        return await self.r.db(RETHINKDB_DB).table("modules").get(module_id).run(self.connection)
+        return (
+            await self.r.db(RETHINKDB_DB)
+            .table("modules")
+            .get(module_name)
+            .run(self.connection)
+        )
 
     async def upsert_module(self, module):
-        # TODO: incorporate versioning
-        # compute the primary key from name and version
-        # if "version" in module.keys():
-        #     version = module["version"]
-        # else:
-        #     version = "1.0.0"
-        # name = module["name"]
-        module["id"] = module["name"]
-
         # insert the module (or update if it matches an existing name-version combo)
         await (
             self.r.db(RETHINKDB_DB)
@@ -90,7 +91,9 @@ class RethinkDbRepository(Repository):
     async def create_jobs_table(self):
         try:
             await (
-                self.r.db(RETHINKDB_DB).table_create("jobs", primary_key="id").run(self.connection)
+                self.r.db(RETHINKDB_DB)
+                .table_create("jobs", primary_key="id")
+                .run(self.connection)
             )
         except ReqlOpFailedError:
             pass
@@ -103,11 +106,19 @@ class RethinkDbRepository(Repository):
             .run(self.connection)
         )
 
-    async def get_job_by_id(self, id):
-        return await self.r.db(RETHINKDB_DB).table("jobs").get(id).run(self.connection)
+    async def get_job_by_id(self, job_id):
+        return (
+            await self.r.db(RETHINKDB_DB).table("jobs").get(job_id).run(self.connection)
+        )
 
-    async def delete_job_by_id(self, id):
-        await self.r.db(RETHINKDB_DB).table("jobs").get(id).delete().run(self.connection)
+    async def delete_job_by_id(self, job_id):
+        await (
+            self.r.db(RETHINKDB_DB)
+            .table("jobs")
+            .get(job_id)
+            .delete()
+            .run(self.connection)
+        )
 
     #
     # SOURCES
@@ -130,11 +141,22 @@ class RethinkDbRepository(Repository):
             .run(self.connection)
         )
 
-    async def get_source_by_id(self, id):
-        return await self.r.db(RETHINKDB_DB).table("sources").get(id).run(self.connection)
+    async def get_source_by_id(self, source_id):
+        return (
+            await self.r.db(RETHINKDB_DB)
+            .table("sources")
+            .get(source_id)
+            .run(self.connection)
+        )
 
-    async def delete_source_by_id(self, id):
-        await self.r.db(RETHINKDB_DB).table("sources").get(id).delete().run(self.connection)
+    async def delete_source_by_id(self, source_id):
+        await (
+            self.r.db(RETHINKDB_DB)
+            .table("sources")
+            .get(source_id)
+            .delete()
+            .run(self.connection)
+        )
 
     #
     # RESULTS
