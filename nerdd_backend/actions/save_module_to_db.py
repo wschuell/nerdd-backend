@@ -2,7 +2,7 @@ import logging
 
 from nerdd_link import Action, Channel, ModuleMessage
 
-from ..data import RethinkDbRepository
+from ..data import Module, RethinkDbRepository
 
 __all__ = ["SaveModuleToDb"]
 
@@ -16,7 +16,7 @@ class SaveModuleToDb(Action[ModuleMessage]):
 
     async def _process_message(self, message: ModuleMessage) -> None:
         logger.info(f"Creating a new module called {message.name}")
-        await self.repository.upsert_module(message)
+        await self.repository.upsert_module(Module(**message.model_dump()))
 
     def _get_group_name(self):
         return "save-module-to-db"
