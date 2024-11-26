@@ -1,5 +1,6 @@
 import asyncio
 import json
+from ast import literal_eval
 
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
@@ -40,10 +41,28 @@ def check_status_code(response, expected_status_code):
     assert status_code == expected_status_code
 
 
-@then(parsers.parse("the client receives {expected_response}"))
+@then(parsers.parse("the client receives a response with content\n{expected_response}"))
 def check_response(response, expected_response):
     decoded = json.loads(expected_response)
     assert response.json() == decoded, f"Expected {decoded}, got {response.json()}"
+
+
+@then(parsers.parse("the client receives a response containing\n{expected_response}"))
+def check_response_contains(response, expected_response):
+    decoded = literal_eval(expected_response)
+
+    response_json = response.json()
+
+    if isinstance(response_json, list):
+        assert any(
+            all(key in item and item[key] == value for key, value in decoded.items())
+            for item in response_json
+        ), f"Expected {decoded}, got {response.json()}"
+    else:
+        assert all(
+            key in response.json() and response.json()[key] == value
+            for key, value in decoded.items()
+        ), f"Expected {decoded}, got {response.json()}"
 
 
 @when(parsers.parse("we wait for {seconds:d} seconds"))
