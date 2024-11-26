@@ -9,7 +9,6 @@ import aiofiles
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 
 from ..data import RethinkDbRepository, Source
-from ..settings import MEDIA_ROOT
 
 sources_router = APIRouter(prefix="/sources")
 

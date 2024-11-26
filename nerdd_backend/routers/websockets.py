@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Query, WebSocket
 
-from ..settings import PAGE_SIZE
 from .jobs import get_job
 
 __all__ = ["get_job_ws", "get_results_ws", "websockets_router"]
