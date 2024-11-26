@@ -1,0 +1,9 @@
+defaults:
+  - channel: kafka
+  - db: rethinkdb
+
+host: 0.0.0.0
+port: 8000
+
+page_size: 5
+media_root: /data
