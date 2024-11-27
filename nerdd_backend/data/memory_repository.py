@@ -1,5 +1,6 @@
-from typing import Any, AsyncIterable, List, Optional
+from typing import AsyncIterable, List, Optional
 
+from .exceptions import RecordNotFoundError
 from .job import Job
 from .module import Module
 from .repository import Repository
@@ -37,17 +38,21 @@ class MemoryRepository(Repository):
             existing_module.id == module.id for existing_module in self.modules
         )
         if existing:
+            existing_module = module
             self.modules = [
-                Module(**existing_module, **module)
-                if existing_module.id != module.id
+                Module(**module, **existing_module)
+                if existing_module.id == module.id
                 else module
-                for existing_module in self.modules
+                for module in self.modules
             ]
         else:
             self.modules.append(module)
 
     async def get_module_by_id(self, id: str) -> Module:
-        return next((module for module in self.modules if module.id == id))
+        try:
+            return next((module for module in self.modules if module.id == id))
+        except StopIteration as e:
+            raise RecordNotFoundError(Module, id) from e
 
     #
     # JOBS
@@ -62,13 +67,16 @@ class MemoryRepository(Repository):
             existing_job = None
         if existing_job:
             self.jobs = [
-                existing_job if existing_job.id != job.id else job for job in self.jobs
+                existing_job if existing_job.id == job.id else job for job in self.jobs
             ]
         else:
             self.jobs.append(job)
 
     async def get_job_by_id(self, id: str) -> Job:
-        return next((job for job in self.jobs if job.id == id))
+        try:
+            return next((job for job in self.jobs if job.id == id))
+        except StopIteration as e:
+            raise RecordNotFoundError(Job, id) from e
 
     async def delete_job_by_id(self, id: str) -> None:
         self.jobs = [job for job in self.jobs if job.id != id]
@@ -77,6 +85,7 @@ class MemoryRepository(Repository):
     # SOURCES
     #
     async def upsert_source(self, source: Source) -> None:
+        print(source)
         if source.id is not None:
             existing_source = await self.get_source_by_id(source.id)
         else:
@@ -84,14 +93,17 @@ class MemoryRepository(Repository):
 
         if existing_source:
             self.sources = [
-                existing_source if existing_source.id != source.id else source
+                existing_source if existing_source.id == source.id else source
                 for source in self.sources
             ]
         else:
             self.sources.append(source)
 
     async def get_source_by_id(self, id: str) -> Source:
-        return next((source for source in self.sources if source.id == id))
+        try:
+            return next((source for source in self.sources if source.id == id))
+        except StopIteration as e:
+            raise RecordNotFoundError(Source, id) from e
 
     async def delete_source_by_id(self, id: str) -> None:
         self.sources = [source for source in self.sources if source.id != id]
@@ -108,7 +120,10 @@ class MemoryRepository(Repository):
         yield NotImplementedError()
 
     async def get_result_by_id(self, id: str) -> Result:
-        return next((result for result in self.results if result.id == id))
+        try:
+            return next((result for result in self.results if result.id == id))
+        except StopIteration as e:
+            raise RecordNotFoundError(Result, id) from e
 
     async def get_results_by_job_id(
         self,
@@ -129,7 +144,7 @@ class MemoryRepository(Repository):
             existing_result = None
         if existing_result:
             self.results = [
-                existing_result if existing_result.id != result.id else result
+                existing_result if existing_result.id == result.id else result
                 for result in self.results
             ]
         else:
