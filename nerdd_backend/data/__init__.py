@@ -1,3 +1,4 @@
+from .exceptions import *
 from .job import *
 from .memory_repository import *
 from .module import *
