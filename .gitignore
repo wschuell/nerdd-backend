@@ -165,4 +165,7 @@ cython_debug/
 .vscode/
 
 # hydra
-outputs
+outputs/
+
+# test media directory
+media/
