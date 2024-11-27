@@ -11,5 +11,5 @@ class Job(BaseModel):
     job_type: str
     source_id: str
     params: dict
-    created_at: datetime
+    created_at: datetime = datetime.now()
     status: str

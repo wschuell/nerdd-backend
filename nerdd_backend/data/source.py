@@ -10,4 +10,4 @@ class Source(BaseModel):
     id: Optional[str] = None
     format: Optional[str] = None
     filename: str
-    created_at: datetime
+    created_at: datetime = datetime.now()
