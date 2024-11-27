@@ -58,12 +58,13 @@ async def put_multiple_sources(
 async def put_source(request: Request, file: UploadFile, format: Optional[str] = None):
     app = request.app
     repository: RethinkDbRepository = app.state.repository
+    media_root = app.state.config.media_root
 
     # create uuid
     uuid = uuid4()
 
     # create path to new file
-    path = os.path.join(MEDIA_ROOT, "sources", str(uuid))
+    path = os.path.join(media_root, "sources", str(uuid))
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
     # store file
@@ -98,13 +99,14 @@ async def get_source(request: Request, uuid: str):
 async def delete_source(request: Request, uuid: str):
     app = request.app
     repository: RethinkDbRepository = app.state.repository
+    media_root = app.state.config.media_root
 
     source = await repository.get_source_by_id(uuid)
     if source is None:
         raise HTTPException(status_code=404, detail="Source not found")
 
     # delete file from disk
-    path = os.path.join(MEDIA_ROOT, "sources", str(uuid))
+    path = os.path.join(media_root, "sources", str(uuid))
     os.remove(path)
 
     # delete source from database
