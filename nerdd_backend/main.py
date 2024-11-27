@@ -23,12 +23,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-@hydra.main(version_base=None, config_path="settings", config_name="config")
-def main(cfg: DictConfig) -> None:
-    logger.info(
-        f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}"
-    )
-
+def create_app(cfg: DictConfig):
     lifespans = [
         InitializeAppLifespan(cfg),
         ActionLifespan(
@@ -88,6 +83,16 @@ def main(cfg: DictConfig) -> None:
     app.include_router(results_router)
     app.include_router(modules_router)
     app.include_router(websockets_router)
+
+    return app
+
+
+@hydra.main(version_base=None, config_path="settings", config_name="config")
+def main(cfg: DictConfig) -> None:
+    logger.info(
+        f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}"
+    )
+    app = create_app(cfg)
 
     uvicorn.run(
         app,
