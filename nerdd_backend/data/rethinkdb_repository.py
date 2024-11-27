@@ -4,7 +4,12 @@ import json
 from rethinkdb import RethinkDB
 from rethinkdb.errors import ReqlOpFailedError
 
+from .exceptions import RecordNotFoundError
+from .job import Job
+from .module import Module
 from .repository import Repository
+from .result import Result
+from .source import Source
 
 __all__ = ["RethinkDbRepository"]
 
@@ -59,12 +64,17 @@ class RethinkDbRepository(Repository):
         return [item async for item in cursor]
 
     async def get_module_by_id(self, module_id):
-        return (
+        result = (
             await self.r.db(self.database_name)
             .table("modules")
             .get(module_id)
             .run(self.connection)
         )
+
+        if result is None:
+            raise RecordNotFoundError(Module, module_id)
+
+        return result
 
     async def create_module_table(self):
         try:
@@ -77,13 +87,17 @@ class RethinkDbRepository(Repository):
             pass
 
     async def get_most_recent_version(self, module_name):
-        # TODO: incorporate versioning
-        return (
+        result = (
             await self.r.db(self.database_name)
             .table("modules")
             .get(module_name)
             .run(self.connection)
         )
+
+        if result is None:
+            raise RecordNotFoundError(Module, module_name)
+
+        return result
 
     async def upsert_module(self, module):
         # insert the module (or update if it matches an existing name-version combo)
@@ -116,12 +130,17 @@ class RethinkDbRepository(Repository):
         )
 
     async def get_job_by_id(self, job_id):
-        return (
+        result = (
             await self.r.db(self.database_name)
             .table("jobs")
             .get(job_id)
             .run(self.connection)
         )
+
+        if result is None:
+            raise RecordNotFoundError(Job, job_id)
+
+        return result
 
     async def delete_job_by_id(self, job_id):
         await (
@@ -154,12 +173,17 @@ class RethinkDbRepository(Repository):
         )
 
     async def get_source_by_id(self, source_id):
-        return (
+        result = (
             await self.r.db(self.database_name)
             .table("sources")
             .get(source_id)
             .run(self.connection)
         )
+
+        if result is None:
+            raise RecordNotFoundError(Source, source_id)
+
+        return result
 
     async def delete_source_by_id(self, source_id):
         await (
@@ -203,7 +227,7 @@ class RethinkDbRepository(Repository):
         )
 
     async def get_results_by_job_id(self, job_id, start_mol_id, end_mol_id):
-        return (
+        result = (
             await self.r.db(self.database_name)
             .table("results")
             .filter(
@@ -214,6 +238,11 @@ class RethinkDbRepository(Repository):
             .order_by("mol_id")
             .run(self.connection)
         )
+
+        if result is None:
+            raise RecordNotFoundError(Result, job_id)
+
+        return result
 
     async def upsert_result(self, result):
         await (
