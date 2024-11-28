@@ -7,7 +7,7 @@ __all__ = ["Source"]
 
 
 class Source(BaseModel):
-    id: Optional[str] = None
+    id: str
     format: Optional[str] = None
     filename: str
     created_at: datetime = datetime.now()
