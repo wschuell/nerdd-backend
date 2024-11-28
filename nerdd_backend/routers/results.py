@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 
-from ..data import repository
+from ..data import RethinkDbRepository
 from ..settings import PAGE_SIZE
 from .jobs import get_job
 
@@ -13,6 +13,9 @@ results_router = APIRouter(prefix="")
 async def get_results(
     job_id: str, page: int = 1, return_incomplete: bool = False, request: Request = None
 ):
+    app = request.app
+    repository: RethinkDbRepository = app.state.repository
+
     job = await repository.get_job_by_id(job_id)
     page_zero_based = page - 1
 
@@ -21,7 +24,7 @@ async def get_results(
 
     # num_entries might not be available, yet
     # we assume it to be positive infinity in that case
-    num_entries = job.get("num_entries", float("inf"))
+    num_entries = job.get("num_entries_total", float("inf"))
 
     # check if page is clearly out of range
     if page_zero_based < 0 or page_zero_based * PAGE_SIZE >= num_entries:
@@ -49,9 +52,11 @@ async def get_results(
         page_size=PAGE_SIZE,
         is_incomplete=is_incomplete,
         first_mol_id_on_page=first_mol_id,
-        last_mol_id_on_page=last_mol_id - 1,
+        last_mol_id_on_page=last_mol_id,
         previous_url=page_url(page_zero_based - 1) if page_zero_based > 0 else None,
-        next_url=(page_url(page_zero_based + 1) if last_mol_id < num_entries - 1 else None),
+        next_url=(
+            page_url(page_zero_based + 1) if last_mol_id < num_entries - 1 else None
+        ),
     )
 
     return dict(data=results, pagination=pagination, job=job)

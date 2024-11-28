@@ -8,14 +8,19 @@ from typing import List, Optional
 from uuid import uuid4
 
 import aiofiles
-from fastapi import APIRouter, HTTPException, UploadFile, WebSocket
+from fastapi import APIRouter, HTTPException, Request, UploadFile
 
-from ..data import repository
+from ..data import RethinkDbRepository
 
 sources_router = APIRouter(prefix="/sources")
 
 
-async def put_multiple_sources(inputs: List[str], sources: List[str], files: List[UploadFile]):
+async def put_multiple_sources(
+    inputs: List[str],
+    sources: List[str],
+    files: List[UploadFile],
+    repository: RethinkDbRepository,
+):
     all_sources = []
 
     # create source from inputs list
@@ -26,7 +31,9 @@ async def put_multiple_sources(inputs: List[str], sources: List[str], files: Lis
             file = UploadFile(file_stream)
             return await put_source(file=file)
 
-        sources_from_inputs = await asyncio.gather(*[_put_input(input) for input in inputs])
+        sources_from_inputs = await asyncio.gather(
+            *[_put_input(input) for input in inputs]
+        )
         all_sources += sources_from_inputs
 
     for source_id in sources:
@@ -35,7 +42,9 @@ async def put_multiple_sources(inputs: List[str], sources: List[str], files: Lis
             all_sources.append(source)
 
     # create one json file referencing all sources
-    sources_from_files = await asyncio.gather(*[put_source(file=file) for file in files])
+    sources_from_files = await asyncio.gather(
+        *[put_source(file=file) for file in files]
+    )
     all_sources += sources_from_files
 
     # create a merged file with all sources
@@ -48,7 +57,10 @@ async def put_multiple_sources(inputs: List[str], sources: List[str], files: Lis
 
 @sources_router.put("", include_in_schema=False)
 @sources_router.put("/")
-async def put_source(file: UploadFile, format: Optional[str] = None):
+async def put_source(request: Request, file: UploadFile, format: Optional[str] = None):
+    app = request.app
+    repository: RethinkDbRepository = app.state.repository
+
     # create uuid
     uuid = uuid4()
 
@@ -74,7 +86,10 @@ async def put_source(file: UploadFile, format: Optional[str] = None):
 
 
 @sources_router.get("/{uuid}")
-async def get_source(uuid: str):
+async def get_source(request: Request, uuid: str):
+    app = request.app
+    repository: RethinkDbRepository = app.state.repository
+
     source = await repository.get_source_by_id(uuid)
     if source is None:
         raise HTTPException(status_code=404, detail="Source not found")
@@ -83,7 +98,10 @@ async def get_source(uuid: str):
 
 
 @sources_router.delete("/{uuid}")
-async def delete_source(uuid: str):
+async def delete_source(request: Request, uuid: str):
+    app = request.app
+    repository: RethinkDbRepository = app.state.repository
+
     source = await repository.get_source_by_id(uuid)
     if source is None:
         raise HTTPException(status_code=404, detail="Source not found")

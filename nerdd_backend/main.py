@@ -5,18 +5,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .kafka import (
-    KafkaJobConsumer,
-    KafkaLogConsumer,
-    KafkaModuleConsumer,
-    KafkaResultConsumer,
-)
-from .lifespan import (
-    ConsumeKafkaTopicLifespan,
-    CreateModuleLifespan,
-    InitializeDatabaseLifespan,
-    KafkaProducerLifespan,
-)
+from .actions import SaveJobToDb, SaveModuleToDb, UpdateJobSize
+from .lifespan import ActionLifespan, CreateModuleLifespan, InitializeAppLifespan
 from .routers import (
     jobs_router,
     modules_router,
@@ -29,13 +19,12 @@ logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
+
 lifespans = [
-    InitializeDatabaseLifespan(),
-    KafkaProducerLifespan(),
-    ConsumeKafkaTopicLifespan("modules", [KafkaModuleConsumer()]),
-    ConsumeKafkaTopicLifespan("results", [KafkaResultConsumer()]),
-    ConsumeKafkaTopicLifespan("jobs", [KafkaJobConsumer()]),
-    ConsumeKafkaTopicLifespan("logs", [KafkaLogConsumer()]),
+    InitializeAppLifespan(),
+    ActionLifespan(lambda app: SaveJobToDb(app.state.channel, app.state.repository)),
+    ActionLifespan(lambda app: UpdateJobSize(app.state.channel, app.state.repository)),
+    ActionLifespan(lambda app: SaveModuleToDb(app.state.channel, app.state.repository)),
     CreateModuleLifespan(),
 ]
 
@@ -50,7 +39,9 @@ async def lifespan(app: FastAPI):
     await start_tasks
 
     logger.info("Running tasks")
-    run_tasks = asyncio.gather(*[asyncio.create_task(lifespan.run()) for lifespan in lifespans])
+    run_tasks = asyncio.gather(
+        *[asyncio.create_task(lifespan.run()) for lifespan in lifespans]
+    )
 
     yield
 
@@ -64,6 +55,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+
 origins = [
     "http://localhost",
     "http://localhost:8000",
