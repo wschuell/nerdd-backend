@@ -1,6 +1,3 @@
-import asyncio
-from threading import Thread
-
 __all__ = ["AbstractLifespan"]
 
 

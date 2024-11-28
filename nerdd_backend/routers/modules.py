@@ -7,7 +7,7 @@ __all__ = ["modules_router"]
 modules_router = APIRouter(prefix="/modules")
 
 
-@modules_router.get('', include_in_schema=False)
+@modules_router.get("", include_in_schema=False)
 @modules_router.get("/")
 async def get_modules():
     modules = await repository.get_all_modules()
