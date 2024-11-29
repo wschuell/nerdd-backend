@@ -7,8 +7,6 @@ from fastapi import APIRouter, Body, HTTPException, Request
 from nerdd_link import JobMessage
 from pydantic import BaseModel
 
-from ..settings import PAGE_SIZE
-
 __all__ = ["jobs_router"]
 
 jobs_router = APIRouter(prefix="/jobs")
@@ -18,7 +16,9 @@ async def augment_job(job, page_size, request: Request):
     app = request.app
     repository = app.state.repository
 
-    num_entries_processed = await repository.get_num_processed_entries_by_job_id(job["id"])
+    num_entries_processed = await repository.get_num_processed_entries_by_job_id(
+        job["id"]
+    )
     job["num_entries_processed"] = num_entries_processed
 
     # TODO

@@ -1,0 +1,10 @@
+name: rethinkdb
+# If env is set to true, the server tries to get host, port and database name from environment
+# variables (RETHINKDB_HOST, RETHINKDB_PORT, RETHINKDB_DATABASE). If an environment variable is
+# not defined, its fallback value (see below) will be used.
+env: true
+# If env is set to false (or environment variables are not found), then the following values are
+# used:
+host: rethinkdb-service.default
+port: 28015
+database: nerdd
