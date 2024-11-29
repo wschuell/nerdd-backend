@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import shutil
 from io import BytesIO
 from time import time
 from typing import List, Optional
@@ -31,9 +30,7 @@ async def put_multiple_sources(
             file = UploadFile(file_stream)
             return await put_source(file=file)
 
-        sources_from_inputs = await asyncio.gather(
-            *[_put_input(input) for input in inputs]
-        )
+        sources_from_inputs = await asyncio.gather(*[_put_input(input) for input in inputs])
         all_sources += sources_from_inputs
 
     for source_id in sources:
@@ -42,9 +39,7 @@ async def put_multiple_sources(
             all_sources.append(source)
 
     # create one json file referencing all sources
-    sources_from_files = await asyncio.gather(
-        *[put_source(file=file) for file in files]
-    )
+    sources_from_files = await asyncio.gather(*[put_source(file=file) for file in files])
     all_sources += sources_from_files
 
     # create a merged file with all sources

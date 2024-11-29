@@ -1,6 +1,6 @@
 from pytest_bdd import given
 
-from ..async_step import async_step
+from .async_step import async_step
 
 
 @given("a mocked channel")

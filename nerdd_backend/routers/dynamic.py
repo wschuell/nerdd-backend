@@ -1,18 +1,8 @@
-import inspect
 import json
 import logging
-from typing import Annotated, List, Union
+from typing import List, Union
 
-from fastapi import (
-    APIRouter,
-    Body,
-    Depends,
-    Form,
-    HTTPException,
-    Query,
-    Request,
-    UploadFile,
-)
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, UploadFile
 from pydantic import create_model, model_validator
 
 from .jobs import create_job, delete_job, get_job
@@ -96,7 +86,7 @@ def get_dynamic_router(module):
         return await create_job(
             job_type=module["name"],
             source_id=result_source["id"],
-            params=dict((k, v) for k, v in params.items() if k in field_definitions),
+            params={(k, v) for k, v in params.items() if k in field_definitions},
             request=request,
         )
 
@@ -118,7 +108,7 @@ def get_dynamic_router(module):
     # POST /jobs
     #
     async def create_complex_job(
-        files: Union[List[UploadFile], UploadFile, str] = [],
+        files: Union[List[UploadFile], UploadFile, str] = "",
         job: QueryModelPost = Body(),
         request: Request = None,
     ):
@@ -131,7 +121,7 @@ def get_dynamic_router(module):
             job.inputs,
             job.sources,
             files,
-            dict((k, v) for k, v in job.dict().items() if k not in ["inputs", "sources"]),
+            {(k, v) for k, v in job.dict().items() if k not in ["inputs", "sources"]},
             request,
         )
 
