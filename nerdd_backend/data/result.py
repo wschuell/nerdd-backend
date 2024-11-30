@@ -1,12 +1,10 @@
-from typing import Optional
-
 from pydantic import BaseModel, ConfigDict
 
 __all__ = ["Result"]
 
 
 class Result(BaseModel):
-    id: Optional[str] = None
+    id: str
     job_id: str
     mol_id: int
 

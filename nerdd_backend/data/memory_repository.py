@@ -61,10 +61,11 @@ class MemoryRepository(Repository):
         yield NotImplementedError()
 
     async def upsert_job(self, job: Job) -> None:
-        if job.id is not None:
+        try:
             existing_job = await self.get_job_by_id(job.id)
-        else:
+        except RecordNotFoundError:
             existing_job = None
+
         if existing_job:
             self.jobs = [
                 existing_job if existing_job.id == job.id else job for job in self.jobs
@@ -85,10 +86,9 @@ class MemoryRepository(Repository):
     # SOURCES
     #
     async def upsert_source(self, source: Source) -> None:
-        print(source)
-        if source.id is not None:
+        try:
             existing_source = await self.get_source_by_id(source.id)
-        else:
+        except RecordNotFoundError:
             existing_source = None
 
         if existing_source:
@@ -138,10 +138,11 @@ class MemoryRepository(Repository):
         ]
 
     async def upsert_result(self, result: Result) -> None:
-        if result.id is not None:
+        try:
             existing_result = await self.get_result_by_id(result.id)
-        else:
+        except RecordNotFoundError:
             existing_result = None
+
         if existing_result:
             self.results = [
                 existing_result if existing_result.id == result.id else result
