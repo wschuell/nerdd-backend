@@ -1,19 +1,30 @@
 import asyncio
 import json
+import logging
 from ast import literal_eval
 
 import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi.testclient import TestClient
+from hydra import compose, initialize
+from nerdd_backend.main import create_app
 from pytest_bdd import parsers, then, when
 
 from .async_step import async_step
 
+logger = logging.getLogger(__name__)
+
 
 @pytest_asyncio.fixture
 async def client():
-    from nerdd_backend.main import app
+    # load correct config file
+    with initialize(version_base=None, config_path="../../nerdd_backend/settings"):
+        cfg = compose(config_name="development")
 
+    # create app
+    app = create_app(cfg)
+
+    # run app
     async with LifespanManager(app):
         client = TestClient(app)
         yield client
@@ -25,7 +36,19 @@ async def client():
 )
 def post_request(client, url, data):
     response = client.post(url, json=json.loads(data))
-    print(response.json())
+    logger.info("response: %s", response.json())
+    return response
+
+
+@when(
+    parsers.parse("the client sends a PUT request to {url} with the files"),
+    target_fixture="response",
+)
+def put_request_with_files(client, url, files):
+    print(files)
+    actual_files = {"file": (file_name, open(file_name, "rb")) for file_name in files}
+    response = client.put(url, files=actual_files)
+    logger.info("response: %s", response.json())
     return response
 
 

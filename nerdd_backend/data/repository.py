@@ -50,7 +50,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def upsert_job(self, job: Job):
+    async def upsert_job(self, job: Job) -> None:
         pass
 
     @abstractmethod
