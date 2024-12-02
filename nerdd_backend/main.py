@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from omegaconf import DictConfig, OmegaConf
 
-from .actions import SaveJobToDb, SaveModuleToDb, UpdateJobSize
+from .actions import SaveModuleToDb, UpdateJobSize
 from .lifespan import ActionLifespan, CreateModuleLifespan, InitializeAppLifespan
 from .routers import (
     jobs_router,
@@ -27,9 +27,6 @@ logger = logging.getLogger(__name__)
 def create_app(cfg: DictConfig):
     lifespans = [
         InitializeAppLifespan(cfg),
-        ActionLifespan(
-            lambda app: SaveJobToDb(app.state.channel, app.state.repository)
-        ),
         ActionLifespan(
             lambda app: UpdateJobSize(app.state.channel, app.state.repository)
         ),
