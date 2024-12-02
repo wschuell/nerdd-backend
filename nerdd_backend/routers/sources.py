@@ -8,7 +8,7 @@ from uuid import uuid4
 import aiofiles
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 
-from ..data import RethinkDbRepository, Source
+from ..data import RecordNotFoundError, Repository, Source
 
 sources_router = APIRouter(prefix="/sources")
 
@@ -17,8 +17,11 @@ async def put_multiple_sources(
     inputs: List[str],
     sources: List[str],
     files: List[UploadFile],
-    repository: RethinkDbRepository,
+    request: Request,
 ):
+    app = request.app
+    repository: Repository = app.state.repository
+
     all_sources = []
 
     # create source from inputs list
@@ -27,7 +30,7 @@ async def put_multiple_sources(
         async def _put_input(input: str):
             file_stream = BytesIO(input.encode("utf-8"))
             file = UploadFile(file_stream)
-            return await put_source(file=file)
+            return await put_source(request, file=file)
 
         sources_from_inputs = await asyncio.gather(
             *[_put_input(input) for input in inputs]
@@ -41,14 +44,16 @@ async def put_multiple_sources(
 
     # create one json file referencing all sources
     sources_from_files = await asyncio.gather(
-        *[put_source(file=file) for file in files]
+        *[put_source(request, file=file) for file in files]
     )
     all_sources += sources_from_files
 
+    all_sources_objects = [source.model_dump() for source in all_sources]
+
     # create a merged file with all sources
-    file_stream = BytesIO(json.dumps(all_sources).encode("utf-8"))
+    file_stream = BytesIO(json.dumps(all_sources_objects).encode("utf-8"))
     file = UploadFile(file_stream, filename="input.json")
-    result_source = await put_source(file=file, format="json")
+    result_source = await put_source(request, file=file, format="json")
 
     return result_source
 
@@ -57,7 +62,7 @@ async def put_multiple_sources(
 @sources_router.put("/")
 async def put_source(request: Request, file: UploadFile, format: Optional[str] = None):
     app = request.app
-    repository: RethinkDbRepository = app.state.repository
+    repository: Repository = app.state.repository
     media_root = app.state.config.media_root
 
     # create uuid
@@ -73,10 +78,11 @@ async def put_source(request: Request, file: UploadFile, format: Optional[str] =
             await out_file.write(content)  # async write chunk
 
     # create media object
+    # TODO: remove filename attribute from source
     source = Source(
         id=str(uuid),
         format=format,
-        filename=file.filename,
+        filename=str(uuid),
     )
     await repository.upsert_source(source)
 
@@ -86,11 +92,11 @@ async def put_source(request: Request, file: UploadFile, format: Optional[str] =
 @sources_router.get("/{uuid}")
 async def get_source(request: Request, uuid: str):
     app = request.app
-    repository: RethinkDbRepository = app.state.repository
-
-    source = await repository.get_source_by_id(uuid)
-    if source is None:
-        raise HTTPException(status_code=404, detail="Source not found")
+    repository: Repository = app.state.repository
+    try:
+        source = await repository.get_source_by_id(uuid)
+    except RecordNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Source not found") from e
 
     return source
 
@@ -98,12 +104,13 @@ async def get_source(request: Request, uuid: str):
 @sources_router.delete("/{uuid}")
 async def delete_source(request: Request, uuid: str):
     app = request.app
-    repository: RethinkDbRepository = app.state.repository
+    repository: Repository = app.state.repository
     media_root = app.state.config.media_root
 
-    source = await repository.get_source_by_id(uuid)
-    if source is None:
-        raise HTTPException(status_code=404, detail="Source not found")
+    try:
+        await repository.get_source_by_id(uuid)
+    except RecordNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Source not found") from e
 
     # delete file from disk
     path = os.path.join(media_root, "sources", str(uuid))
