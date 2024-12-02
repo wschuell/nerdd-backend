@@ -1,4 +1,4 @@
-from nerdd_link import KafkaChannel
+from nerdd_link import KafkaChannel, SystemMessage
 from nerdd_link.tests import DummyChannel
 from omegaconf import DictConfig
 
@@ -20,6 +20,9 @@ class InitializeAppLifespan(AbstractLifespan):
         app.state.config = self.config
 
         await repository.initialize()
+
+        if self.config.mock_infra:
+            await channel.system_topic().send(SystemMessage())
 
     def get_channel(self, config: DictConfig):
         if config.channel.name == "kafka":

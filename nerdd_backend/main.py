@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import hydra
@@ -37,6 +38,38 @@ def create_app(cfg: DictConfig):
         ),
         CreateModuleLifespan(),
     ]
+
+    if cfg.mock_infra:
+        from nerdd_link import (
+            PredictCheckpointsAction,
+            ProcessJobsAction,
+            RegisterModuleAction,
+        )
+        from nerdd_module.tests import MolWeightModel
+
+        model = MolWeightModel()
+
+        lifespans = [
+            *lifespans,
+            ActionLifespan(lambda app: RegisterModuleAction(app.state.channel, model)),
+            ActionLifespan(
+                lambda app: PredictCheckpointsAction(
+                    app.state.channel, model, cfg.media_root
+                )
+            ),
+            ActionLifespan(
+                lambda app: ProcessJobsAction(
+                    app.state.channel,
+                    checkpoint_size=100,
+                    max_num_molecules=10_000,
+                    num_test_entries=10,
+                    ratio_valid_entries=0.5,
+                    maximum_depth=100,
+                    max_num_lines_mol_block=10_000,
+                    data_dir=cfg.media_root,
+                )
+            ),
+        ]
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
