@@ -20,19 +20,19 @@ class CreateModuleLifespan(AbstractLifespan):
         logger.info("Starting CreateModuleLifespan")
         repository = self.app.state.repository
 
-        try:
-            cursor = await repository.get_module_changes()
-            async for module in cursor:
-                module = module["new_val"]
-                logger.info(f"Creating module {module.name}")
+        async for old, new in repository.get_module_changes():
+            try:
+                if old is None:
+                    module = new
+                    logger.info(f"Creating module {module.name}")
 
-                self.app.include_router(get_dynamic_router(module))
+                    self.app.include_router(get_dynamic_router(module))
 
-                # reload the routing table
-                self.app.openapi_schema = None
-        except asyncio.CancelledError:
-            logger.info("Cancelled CreateModuleLifespan")
-        except Exception as e:
-            logger.info(e)
-        finally:
-            logger.info("Stopping CreateModuleLifespan")
+                    # reload the routing table
+                    self.app.openapi_schema = None
+            except asyncio.CancelledError:
+                logger.info("Cancelled CreateModuleLifespan")
+            except Exception as e:
+                logger.error(e)
+
+        logger.info("Stopping CreateModuleLifespan")
