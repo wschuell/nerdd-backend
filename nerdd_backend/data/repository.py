@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import AsyncIterable, List, Optional
+from typing import AsyncIterable, List, Optional, Tuple
 
 from .job import Job
 from .module import Module
@@ -21,7 +21,9 @@ class Repository(ABC):
     # MODULES
     #
     @abstractmethod
-    def get_module_changes(self) -> AsyncIterable:
+    def get_module_changes(
+        self,
+    ) -> AsyncIterable[Tuple[Optional[Module], Optional[Module]]]:
         pass
 
     @abstractmethod
@@ -46,7 +48,9 @@ class Repository(ABC):
     # JOBS
     #
     @abstractmethod
-    def get_job_changes(self, job_id: str) -> AsyncIterable:
+    def get_job_changes(
+        self, job_id: str
+    ) -> AsyncIterable[Tuple[Optional[Job], Optional[Job]]]:
         pass
 
     @abstractmethod
@@ -102,5 +106,5 @@ class Repository(ABC):
         job_id,
         start_mol_id: Optional[int] = None,
         end_mol_id: Optional[int] = None,
-    ) -> AsyncIterable:
+    ) -> AsyncIterable[Tuple[Optional[Result], Optional[Result]]]:
         pass
