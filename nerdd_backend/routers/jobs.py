@@ -7,6 +7,8 @@ from fastapi import APIRouter, Body, HTTPException, Request
 from nerdd_link import JobMessage
 from pydantic import BaseModel
 
+from ..data import RecordNotFoundError
+
 __all__ = ["jobs_router"]
 
 jobs_router = APIRouter(prefix="/jobs")
@@ -48,6 +50,7 @@ async def create_job(request: Request, request_data: CreateJobRequest = Body()):
     app = request.app
     repository = app.state.repository
     channel = app.state.channel
+    config = app.state.config
 
     job_id = uuid4()
 
@@ -62,9 +65,10 @@ async def create_job(request: Request, request_data: CreateJobRequest = Body()):
         )
 
     # check if source exists
-    source = await repository.get_source_by_id(source_id)
-    if source is None:
-        raise HTTPException(status_code=404, detail="Source not found")
+    try:
+        await repository.get_source_by_id(source_id)
+    except RecordNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Source not found") from e
 
     result = dict(
         id=str(job_id),
@@ -88,7 +92,7 @@ async def create_job(request: Request, request_data: CreateJobRequest = Body()):
     )
 
     # return the response
-    return await augment_job(result, PAGE_SIZE, request)
+    return await augment_job(result, config.page_size, request)
 
 
 @jobs_router.delete("/{job_id}")
@@ -109,10 +113,11 @@ async def delete_job(job_id: str, request: Request):
 async def get_job(job_id: str, request: Request):
     app = request.app
     repository = app.state.repository
+    page_size = app.state.config.page_size
 
-    job = await repository.get_job_by_id(job_id)
+    try:
+        job = await repository.get_job_by_id(job_id)
+    except RecordNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Job not found") from e
 
-    if job is None:
-        raise HTTPException(status_code=404, detail="Job not found")
-
-    return await augment_job(job, PAGE_SIZE, request)
+    return await augment_job(job, page_size, request)
