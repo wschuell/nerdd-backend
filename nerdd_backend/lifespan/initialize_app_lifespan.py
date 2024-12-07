@@ -1,5 +1,4 @@
-from nerdd_link import KafkaChannel, SystemMessage
-from nerdd_link.tests import DummyChannel
+from nerdd_link import KafkaChannel, MemoryChannel, SystemMessage
 from omegaconf import DictConfig
 
 from ..data import MemoryRepository, RethinkDbRepository
@@ -19,6 +18,8 @@ class InitializeAppLifespan(AbstractLifespan):
         app.state.channel = channel
         app.state.config = self.config
 
+        await channel.start()
+
         await repository.initialize()
 
         if self.config.mock_infra:
@@ -28,15 +29,13 @@ class InitializeAppLifespan(AbstractLifespan):
         if config.channel.name == "kafka":
             return KafkaChannel(config.channel.broker_url)
         elif config.channel.name == "memory":
-            return DummyChannel()
+            return MemoryChannel()
         else:
             raise ValueError(f"Unsupported channel name: {config.channel.name}")
 
     def get_repository(self, config: DictConfig):
         if config.db.name == "rethinkdb":
-            return RethinkDbRepository(
-                config.db.host, config.db.port, config.db.database_name
-            )
+            return RethinkDbRepository(config.db.host, config.db.port, config.db.database_name)
         elif config.db.name == "memory":
             return MemoryRepository()
         else:
