@@ -7,4 +7,4 @@ env: true
 # used:
 host: rethinkdb-service.default
 port: 28015
-database: nerdd
+database_name: nerdd
