@@ -81,11 +81,10 @@ async def put_source(request: Request, file: UploadFile, format: Optional[str] =
             await out_file.write(content)  # async write chunk
 
     # create media object
-    # TODO: remove filename attribute from source
     source = Source(
         id=str(uuid),
         format=format,
-        filename=str(uuid),
+        filename=file.filename,
     )
     await repository.upsert_source(source)
 
