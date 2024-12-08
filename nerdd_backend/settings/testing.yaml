@@ -1,0 +1,11 @@
+defaults:
+  - channel: memory
+  - db: memory
+
+host: localhost
+port: 8000
+
+page_size: 5
+media_root: ./media
+
+mock_infra: false
