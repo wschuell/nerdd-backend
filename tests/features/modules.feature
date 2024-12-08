@@ -1,6 +1,7 @@
 Feature: Modules
     Background:
-        Given a mocked channel
+        Given a temporary data directory
+        And a mocked channel
         And a mocked repository
 
     Scenario: Get modules after initialization
@@ -16,4 +17,4 @@ Feature: Modules
             }
         And the client requests /modules
         Then the client receives a response containing 
-            {"name": "test", "version": "1.0.0"}
+            {"name": "test", "version": "1.0.0", "task": "molecular_property_prediction"}
