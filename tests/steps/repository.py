@@ -19,8 +19,9 @@ def mocked_repository(mocker, repository):
     )
 
 
-@given("the repository contains the mol weight module")
-@async_step
-async def mol_weight_module(repository):
-    model = MolWeightModel()
-    await repository.upsert_module(Module(**model.get_config().model_dump()))
+# TODO move this to the correct file
+# @given("the repository contains the mol weight module")
+# @async_step
+# async def mol_weight_module(repository):
+#     model = MolWeightModel()
+#     await repository.upsert_module(Module(**model.get_config().model_dump()))
