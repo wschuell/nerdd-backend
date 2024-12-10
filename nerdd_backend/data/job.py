@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -12,3 +13,4 @@ class Job(BaseModel):
     params: dict
     created_at: datetime = datetime.now()
     status: str
+    num_entries_total: Optional[int] = None

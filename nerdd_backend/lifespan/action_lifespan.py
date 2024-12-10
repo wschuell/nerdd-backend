@@ -14,6 +14,12 @@ class ActionLifespan(AbstractLifespan):
 
     async def start(self, app):
         self.action = self.action_creator(app)
+        logger.info(f"Start action {self.action}")
 
     async def run(self):
+        logger.info(f"Run action {self.action}")
         await self.action.run()
+
+    async def stop(self):
+        logger.info(f"Stop action {self.action}")
+        self.action = None

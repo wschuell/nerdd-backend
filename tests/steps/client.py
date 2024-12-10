@@ -7,8 +7,9 @@ import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi.testclient import TestClient
 from hydra import compose, initialize
-from nerdd_backend.main import create_app
 from pytest_bdd import parsers, then, when
+
+from nerdd_backend.main import create_app
 
 from .async_step import async_step
 
@@ -16,10 +17,12 @@ logger = logging.getLogger(__name__)
 
 
 @pytest_asyncio.fixture
-async def client():
+async def client(data_dir):
     # load correct config file
     with initialize(version_base=None, config_path="../../nerdd_backend/settings"):
-        cfg = compose(config_name="development")
+        cfg = compose(config_name="testing")
+
+    cfg.media_root = data_dir
 
     # create app
     app = create_app(cfg)
@@ -45,7 +48,6 @@ def post_request(client, url, data):
     target_fixture="response",
 )
 def put_request_with_files(client, url, files):
-    print(files)
     actual_files = {"file": (file_name, open(file_name, "rb")) for file_name in files}
     response = client.put(url, files=actual_files)
     logger.info("response: %s", response.json())

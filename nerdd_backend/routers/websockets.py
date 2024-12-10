@@ -1,5 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query, WebSocket
+from fastapi.encoders import jsonable_encoder
 
+from ..data import RecordNotFoundError
 from .jobs import get_job
 
 __all__ = ["get_job_ws", "get_results_ws", "websockets_router"]
@@ -16,12 +18,11 @@ async def get_job_ws(websocket: WebSocket, job_id: str):
     await websocket.accept()
 
     job = await get_job(job_id, websocket)
-    await websocket.send_json(job)
+    await websocket.send_json(jsonable_encoder(job))
 
-    cursor = await repository.get_job_changes(job_id)
-    async for _ in cursor:
+    async for _ in repository.get_job_changes(job_id):
         job = await get_job(job_id, websocket)
-        await websocket.send_json(job)
+        await websocket.send_json(jsonable_encoder(job))
 
 
 @websockets_router.websocket("/jobs/{job_id}/results")
@@ -29,27 +30,32 @@ async def get_job_ws(websocket: WebSocket, job_id: str):
 async def get_results_ws(websocket: WebSocket, job_id: str, page: int = Query()):
     app = websocket.app
     repository = app.state.repository
+    page_size = app.state.config.page_size
 
     await websocket.accept()
 
-    job = await repository.get_job_by_id(job_id)
-
-    if job is None:
+    try:
+        job = await repository.get_job_by_id(job_id)
+    except RecordNotFoundError:
         raise HTTPException(status_code=404, detail="Job not found")
 
     # num_entries might not be available, yet
     # we assume it to be positive infinity in that case
-    num_entries = job.get("num_entries_total", float("inf"))
+    if job.num_entries_total is None:
+        num_entries = float("inf")
+    else:
+        num_entries = job.num_entries_total
 
     page_zero_based = page - 1
 
     # check if page is clearly out of range
-    if page_zero_based < 0 or page_zero_based * PAGE_SIZE >= num_entries:
+    if page_zero_based < 0 or page_zero_based * page_size >= num_entries:
         raise HTTPException(status_code=404, detail="Page out of range")
 
-    first_mol_id = page_zero_based * PAGE_SIZE
-    last_mol_id = min(first_mol_id + PAGE_SIZE, num_entries) - 1
+    first_mol_id = page_zero_based * page_size
+    last_mol_id = min(first_mol_id + page_size, num_entries) - 1
 
-    cursor = await repository.get_result_changes(job_id, first_mol_id, last_mol_id)
-    async for result in cursor:
-        await websocket.send_json(result)
+    async for result in repository.get_result_changes(
+        job_id, first_mol_id, last_mol_id
+    ):
+        await websocket.send_json(jsonable_encoder(result))

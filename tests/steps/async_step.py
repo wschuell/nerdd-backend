@@ -2,6 +2,7 @@ import inspect
 from functools import wraps
 
 
+# TODO: remove and use from nerdd-link
 def async_step(step):
     """Convert an async step function to a normal one."""
 

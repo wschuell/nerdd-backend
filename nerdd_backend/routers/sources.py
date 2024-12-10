@@ -7,6 +7,7 @@ from uuid import uuid4
 
 import aiofiles
 from fastapi import APIRouter, HTTPException, Request, UploadFile
+from fastapi.encoders import jsonable_encoder
 
 from ..data import RecordNotFoundError, Repository, Source
 
@@ -51,7 +52,9 @@ async def put_multiple_sources(
     all_sources_objects = [source.model_dump() for source in all_sources]
 
     # create a merged file with all sources
-    file_stream = BytesIO(json.dumps(all_sources_objects).encode("utf-8"))
+    file_stream = BytesIO(
+        json.dumps(jsonable_encoder(all_sources_objects)).encode("utf-8")
+    )
     file = UploadFile(file_stream, filename="input.json")
     result_source = await put_source(request, file=file, format="json")
 
@@ -78,11 +81,10 @@ async def put_source(request: Request, file: UploadFile, format: Optional[str] =
             await out_file.write(content)  # async write chunk
 
     # create media object
-    # TODO: remove filename attribute from source
     source = Source(
         id=str(uuid),
         format=format,
-        filename=str(uuid),
+        filename=file.filename,
     )
     await repository.upsert_source(source)
 

@@ -2,7 +2,7 @@ import logging
 
 from nerdd_link import Action, Channel, ModuleMessage
 
-from ..data import Module, RethinkDbRepository
+from ..data import Module, Repository
 
 __all__ = ["SaveModuleToDb"]
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class SaveModuleToDb(Action[ModuleMessage]):
-    def __init__(self, channel: Channel, repository: RethinkDbRepository) -> None:
+    def __init__(self, channel: Channel, repository: Repository) -> None:
         super().__init__(channel.modules_topic())
         self.repository = repository
 

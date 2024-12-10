@@ -8,4 +8,4 @@ port: 8000
 page_size: 5
 media_root: ./media
 
-mock_infra: true
+mock_infra: false

@@ -1,7 +1,5 @@
-from typing import Any
-
 from nerdd_module.config import Module as NerddModule
-from pydantic import computed_field, model_validator
+from pydantic import computed_field
 
 __all__ = ["Module"]
 
