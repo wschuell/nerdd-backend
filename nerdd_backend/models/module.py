@@ -1,7 +1,9 @@
-from nerdd_module.config import Module as NerddModule
-from pydantic import computed_field
+from typing import Optional
 
-__all__ = ["Module"]
+from nerdd_module.config import Module as NerddModule
+from pydantic import BaseModel, computed_field
+
+__all__ = ["Module", "ModulePublic", "ModuleShort"]
 
 
 class Module(NerddModule):
@@ -16,3 +18,19 @@ class Module(NerddModule):
         #     version = "1.0.0"
         # name = module["name"]
         return self.name
+
+
+class ModulePublic(Module):
+    module_url: str
+
+
+class ModuleShort(BaseModel):
+    id: str
+    rank: Optional[int] = None
+    name: Optional[str] = None
+    version: Optional[str] = None
+    visible_name: Optional[str] = None
+    logo: Optional[str] = None
+    logo_title: Optional[str] = None
+    logo_caption: Optional[str] = None
+    module_url: str
