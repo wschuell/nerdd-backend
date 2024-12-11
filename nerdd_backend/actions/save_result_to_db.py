@@ -2,7 +2,8 @@ import logging
 
 from nerdd_link import Action, Channel, ResultMessage
 
-from ..data import Repository, Result
+from ..data import Repository
+from ..models import Result
 
 __all__ = ["SaveResultToDb"]
 
