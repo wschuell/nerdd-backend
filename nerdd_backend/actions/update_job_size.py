@@ -22,7 +22,8 @@ class UpdateJobSize(Action[LogMessage]):
             job = await self.repository.get_job_by_id(message.job_id)
 
             # update job size
-            job.num_entries_total = message.size
+            job.num_entries_total = message.num_entries
+            job.num_checkpoints_total = message.num_checkpoints
 
             await self.repository.upsert_job(job)
 
