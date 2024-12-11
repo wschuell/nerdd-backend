@@ -7,7 +7,8 @@ from fastapi import APIRouter, Body, HTTPException, Request
 from nerdd_link import JobMessage
 from pydantic import BaseModel
 
-from ..data import Job, RecordNotFoundError
+from ..data import RecordNotFoundError
+from ..models import Job
 
 __all__ = ["jobs_router", "CreateJobRequest"]
 
@@ -20,6 +21,7 @@ class JobPublic(Job):
     num_entries_processed: int
     num_pages_processed: int
     num_pages_total: Optional[int]
+    page_size: int
 
 
 async def augment_job(job: Job, request: Request) -> JobPublic:
@@ -47,6 +49,7 @@ async def augment_job(job: Job, request: Request) -> JobPublic:
         num_entries_processed=num_entries_processed,
         num_pages_processed=num_pages_processed,
         num_pages_total=num_pages_total,
+        page_size=page_size,
     )
 
 
