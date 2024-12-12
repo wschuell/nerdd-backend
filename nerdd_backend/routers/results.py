@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request
 
 from ..data import RecordNotFoundError, Repository
-from .jobs import get_job
+from ..models import Pagination, ResultSet
+from .jobs import augment_job
 
 __all__ = ["results_router"]
 
@@ -11,7 +12,7 @@ results_router = APIRouter(prefix="")
 @results_router.get("/jobs/{job_id}/results")
 async def get_results(
     job_id: str, page: int = 1, return_incomplete: bool = False, request: Request = None
-):
+) -> ResultSet:
     app = request.app
     repository: Repository = app.state.repository
     page_size = app.state.config.page_size
@@ -47,18 +48,16 @@ async def get_results(
         # page in url is 1-based
         return f"{request.base_url}{job.job_type}/jobs/{job_id}/results?page={p+1}"
 
-    job = await get_job(job_id, request)
-
-    pagination = dict(
+    pagination = Pagination(
         page=page,  # 1-based!
         page_size=page_size,
         is_incomplete=is_incomplete,
         first_mol_id_on_page=first_mol_id,
         last_mol_id_on_page=last_mol_id,
         previous_url=page_url(page_zero_based - 1) if page_zero_based > 0 else None,
-        next_url=(
-            page_url(page_zero_based + 1) if last_mol_id < num_entries - 1 else None
-        ),
+        next_url=(page_url(page_zero_based + 1) if last_mol_id < num_entries - 1 else None),
     )
 
-    return dict(data=results, pagination=pagination, job=job)
+    job_public = await augment_job(job, request)
+
+    return ResultSet(data=results, pagination=pagination, job=job_public)
