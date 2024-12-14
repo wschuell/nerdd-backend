@@ -2,7 +2,8 @@ import logging
 
 from nerdd_link import Action, Channel, ModuleMessage
 
-from ..data import Module, Repository
+from ..data import Repository
+from ..models import Module
 
 __all__ = ["SaveModuleToDb"]
 

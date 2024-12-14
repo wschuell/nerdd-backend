@@ -5,8 +5,8 @@ from typing import List, Union
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, UploadFile
 from pydantic import create_model, model_validator
 
-from ..data import Module
-from .jobs import CreateJobRequest, create_job, delete_job, get_job
+from ..models import JobCreate, Module
+from .jobs import create_job, delete_job, get_job
 from .results import get_results
 from .sources import put_multiple_sources
 from .websockets import get_job_ws, get_results_ws
@@ -63,9 +63,7 @@ def get_dynamic_router(module: Module):
     )
     QueryModelPost = create_model(
         "QueryModelForm",
-        __validators__={
-            "validate_to_json": model_validator(mode="before")(validate_to_json)
-        },
+        __validators__={"validate_to_json": model_validator(mode="before")(validate_to_json)},
         inputs=(List[str], []),
         sources=(List[str], []),
         **field_definitions,
@@ -78,7 +76,6 @@ def get_dynamic_router(module: Module):
         params: dict,
         request: Request = None,
     ):
-        app = request.app
         if "job_type" in params and params["job_type"] != module.name:
             return HTTPException(
                 status_code=400,
@@ -88,7 +85,7 @@ def get_dynamic_router(module: Module):
         result_source = await put_multiple_sources(inputs, sources, files, request)
 
         return await create_job(
-            request_data=CreateJobRequest(
+            job=JobCreate(
                 job_type=module.name,
                 source_id=result_source.id,
                 params={k: v for k, v in params.items() if k in field_definitions},
@@ -154,11 +151,7 @@ def get_dynamic_router(module: Module):
     router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}")(get_job_ws)
     router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/")(get_job_ws)
 
-    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/results")(
-        get_results_ws
-    )
-    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/results/")(
-        get_results_ws
-    )
+    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/results")(get_results_ws)
+    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/results/")(get_results_ws)
 
     return router

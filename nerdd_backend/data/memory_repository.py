@@ -2,12 +2,9 @@ from typing import AsyncIterable, List, Optional, Tuple
 
 from nerdd_link.utils import ObservableList
 
+from ..models import Job, Module, Result, Source
 from .exceptions import RecordNotFoundError
-from .job import Job
-from .module import Module
 from .repository import Repository
-from .result import Result
-from .source import Source
 
 __all__ = ["MemoryRepository"]
 

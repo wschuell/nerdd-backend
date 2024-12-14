@@ -1,7 +1,9 @@
 import pytest_asyncio
-from nerdd_backend.data import MemoryRepository, Module
 from nerdd_module.tests import MolWeightModel
 from pytest_bdd import given
+
+from nerdd_backend.data import MemoryRepository
+from nerdd_backend.models import Module
 
 from .async_step import async_step
 

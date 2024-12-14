@@ -5,12 +5,9 @@ from typing import Any, AsyncIterable, Dict, List, Optional, Tuple
 from rethinkdb import RethinkDB
 from rethinkdb.errors import ReqlOpFailedError
 
+from ..models import Job, Module, Result, Source
 from .exceptions import RecordNotFoundError
-from .job import Job
-from .module import Module
 from .repository import Repository
-from .result import Result
-from .source import Source
 
 __all__ = ["RethinkDbRepository"]
 
@@ -74,17 +71,12 @@ class RethinkDbRepository(Repository):
             yield old_module, new_module
 
     async def get_all_modules(self) -> List[Module]:
-        cursor = (
-            await self.r.db(self.database_name).table("modules").run(self.connection)
-        )
+        cursor = await self.r.db(self.database_name).table("modules").run(self.connection)
         return [Module(**item) async for item in cursor]
 
     async def get_module_by_id(self, module_id: str) -> Module:
         result = (
-            await self.r.db(self.database_name)
-            .table("modules")
-            .get(module_id)
-            .run(self.connection)
+            await self.r.db(self.database_name).table("modules").get(module_id).run(self.connection)
         )
 
         if result is None:
@@ -94,11 +86,7 @@ class RethinkDbRepository(Repository):
 
     async def create_module_table(self) -> None:
         try:
-            await (
-                self.r.db(self.database_name)
-                .table_create("modules")
-                .run(self.connection)
-            )
+            await self.r.db(self.database_name).table_create("modules").run(self.connection)
         except ReqlOpFailedError:
             pass
 
@@ -146,12 +134,7 @@ class RethinkDbRepository(Repository):
         )
 
     async def get_job_by_id(self, job_id: str) -> Job:
-        result = (
-            await self.r.db(self.database_name)
-            .table("jobs")
-            .get(job_id)
-            .run(self.connection)
-        )
+        result = await self.r.db(self.database_name).table("jobs").get(job_id).run(self.connection)
 
         if result is None:
             raise RecordNotFoundError(Job, job_id)
@@ -159,13 +142,7 @@ class RethinkDbRepository(Repository):
         return Job(**result)
 
     async def delete_job_by_id(self, job_id: str) -> None:
-        await (
-            self.r.db(self.database_name)
-            .table("jobs")
-            .get(job_id)
-            .delete()
-            .run(self.connection)
-        )
+        await self.r.db(self.database_name).table("jobs").get(job_id).delete().run(self.connection)
 
     #
     # SOURCES
@@ -190,10 +167,7 @@ class RethinkDbRepository(Repository):
 
     async def get_source_by_id(self, source_id: str) -> Source:
         result = (
-            await self.r.db(self.database_name)
-            .table("sources")
-            .get(source_id)
-            .run(self.connection)
+            await self.r.db(self.database_name).table("sources").get(source_id).run(self.connection)
         )
 
         if result is None:

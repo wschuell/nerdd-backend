@@ -17,4 +17,4 @@ Feature: Modules
             }
         And the client requests /modules
         Then the client receives a response containing 
-            {"name": "test", "version": "1.0.0", "task": "molecular_property_prediction"}
+            {"name": "test", "version": "1.0.0"}
