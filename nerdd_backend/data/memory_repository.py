@@ -2,8 +2,8 @@ from typing import AsyncIterable, List, Optional, Tuple
 
 from nerdd_link.utils import ObservableList
 
-from ..models import Job, Module, Result, Source
-from .exceptions import RecordNotFoundError
+from ..models import Job, JobUpdate, Module, Result, Source
+from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
 
 __all__ = ["MemoryRepository"]
@@ -34,11 +34,11 @@ class MemoryRepository(Repository):
     async def get_all_modules(self) -> List[Module]:
         return self.modules.get_items()
 
-    async def upsert_module(self, module: Module) -> None:
+    async def create_module(self, module: Module) -> None:
         assert module.id is not None
         try:
-            existing_module = await self.get_module_by_id(module.id)
-            self.modules.update(existing_module, module)
+            await self.get_module_by_id(module.id)
+            raise RecordAlreadyExistsError(Module, module.id)
         except RecordNotFoundError:
             self.modules.append(module)
 
@@ -58,12 +58,28 @@ class MemoryRepository(Repository):
             if (old is not None and old.id == job_id) or (new is not None and new.id == job_id):
                 yield (old, new)
 
-    async def upsert_job(self, job: Job) -> None:
+    async def create_job(self, job: Job) -> None:
         try:
-            existing_job = await self.get_job_by_id(job.id)
-            self.jobs.update(existing_job, job)
+            await self.get_job_by_id(job.id)
+            raise RecordAlreadyExistsError(Job, job.id)
         except RecordNotFoundError:
             self.jobs.append(job)
+
+    async def update_job(self, job: JobUpdate) -> Job:
+        existing_job = await self.get_job_by_id(job.id)
+        modified_job = Job(**existing_job.model_dump())
+        if job.status is not None:
+            modified_job.status = job.status
+        if job.num_entries_total is not None:
+            modified_job.num_entries_total = job.num_entries_total
+        if job.num_checkpoints_total is not None:
+            modified_job.num_checkpoints_total = job.num_checkpoints_total
+        if job.new_checkpoints_processed is not None:
+            modified_job.checkpoints_processed.extend(job.new_checkpoints_processed)
+        if job.new_output_formats is not None:
+            modified_job.output_formats.extend(job.new_output_formats)
+        self.jobs.update(existing_job, modified_job)
+        return await self.get_job_by_id(job.id)
 
     async def get_job_by_id(self, id: str) -> Job:
         try:
@@ -78,10 +94,10 @@ class MemoryRepository(Repository):
     #
     # SOURCES
     #
-    async def upsert_source(self, source: Source) -> None:
+    async def create_source(self, source: Source) -> None:
         try:
             existing_source = await self.get_source_by_id(source.id)
-            self.sources.update(existing_source, source)
+            raise RecordAlreadyExistsError(Source, source.id)
         except RecordNotFoundError:
             self.sources.append(source)
 
@@ -135,10 +151,10 @@ class MemoryRepository(Repository):
             if result.job_id == job_id and start_mol_id <= result.mol_id <= end_mol_id
         ]
 
-    async def upsert_result(self, result: Result) -> None:
+    async def create_result(self, result: Result) -> None:
         try:
-            existing_result = await self.get_result_by_id(result.id)
-            self.results.update(existing_result, result)
+            await self.get_result_by_id(result.id)
+            raise RecordAlreadyExistsError(Result, result.id)
         except RecordNotFoundError:
             self.results.append(result)
 
