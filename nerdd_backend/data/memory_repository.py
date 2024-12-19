@@ -2,7 +2,7 @@ from typing import AsyncIterable, List, Optional, Tuple
 
 from nerdd_link.utils import ObservableList
 
-from ..models import Job, JobUpdate, Module, Result, Source
+from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
 from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
 
@@ -17,7 +17,7 @@ class MemoryRepository(Repository):
     # INITIALIZATION
     #
     async def initialize(self) -> None:
-        self.jobs = ObservableList[Job]()
+        self.jobs = ObservableList[JobInternal]()
         self.modules = ObservableList[Module]()
         self.sources = ObservableList[Source]()
         self.results = ObservableList[Result]()
@@ -63,9 +63,9 @@ class MemoryRepository(Repository):
             await self.get_job_by_id(job.id)
             raise RecordAlreadyExistsError(Job, job.id)
         except RecordNotFoundError:
-            self.jobs.append(job)
+            self.jobs.append(JobInternal(**job.model_dump()))
 
-    async def update_job(self, job: JobUpdate) -> Job:
+    async def update_job(self, job: JobUpdate) -> JobInternal:
         existing_job = await self.get_job_by_id(job.id)
         modified_job = Job(**existing_job.model_dump())
         if job.status is not None:
@@ -81,7 +81,7 @@ class MemoryRepository(Repository):
         self.jobs.update(existing_job, modified_job)
         return await self.get_job_by_id(job.id)
 
-    async def get_job_by_id(self, id: str) -> Job:
+    async def get_job_by_id(self, id: str) -> JobInternal:
         try:
             return next((job for job in self.jobs.get_items() if job.id == id))
         except StopIteration as e:
