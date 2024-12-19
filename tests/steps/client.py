@@ -90,6 +90,11 @@ def check_response_contains(response, expected_response):
         ), f"Expected {decoded}, got {response.json()}"
 
 
+@then(parsers.parse("the client receives a response of length {expected_length:d}"))
+def check_response_length(response, expected_length):
+    assert len(response.json()) == expected_length, f"Expected {expected_length}, got {response.json()}"
+
+
 @when(parsers.parse("we wait for {seconds:d} seconds"))
 @async_step
 async def wait_for_seconds(seconds):
