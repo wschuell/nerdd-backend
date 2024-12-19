@@ -2,7 +2,7 @@ import logging
 
 from nerdd_link import Action, Channel, ModuleMessage
 
-from ..data import Repository
+from ..data import RecordAlreadyExistsError, Repository
 from ..models import Module
 
 __all__ = ["SaveModuleToDb"]
@@ -17,7 +17,10 @@ class SaveModuleToDb(Action[ModuleMessage]):
 
     async def _process_message(self, message: ModuleMessage) -> None:
         logger.info(f"Creating a new module called {message.name}")
-        await self.repository.upsert_module(Module(**message.model_dump()))
+        try:
+            await self.repository.create_module(Module(**message.model_dump()))
+        except RecordAlreadyExistsError:
+            logger.info(f"Module with id {message.id} already exists in the database")
 
     def _get_group_name(self):
         return "save-module-to-db"
