@@ -6,8 +6,9 @@ Feature: Modules
 
     Scenario: Get modules after initialization
         When the client requests /modules
-        Then the client receives a response with content 
-            []
+        Then the client receives a response of length 1
+        And the client receives a response containing
+            {"name": "mol_scale", "version": "0.1"}
 
     Scenario: Get modules after adding a module
         When the channel receives a message on topic 'modules' with content
