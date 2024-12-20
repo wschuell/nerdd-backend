@@ -43,7 +43,7 @@ async def put_source(file: UploadFile, format: Optional[str] = None, request: Re
         format=format,
         filename=file.filename,
     )
-    await repository.create_source(source)
+    source = await repository.create_source(source)
 
     return SourcePublic(**source.model_dump())
 
