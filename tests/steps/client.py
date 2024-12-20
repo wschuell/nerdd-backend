@@ -25,7 +25,7 @@ async def client(data_dir):
     cfg.media_root = data_dir
 
     # create app
-    app = create_app(cfg)
+    app = await create_app(cfg)
 
     # run app
     async with LifespanManager(app):

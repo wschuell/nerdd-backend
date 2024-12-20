@@ -16,7 +16,7 @@ async def repository(mocker):
 @given("a mocked repository")
 def mocked_repository(mocker, repository):
     mocker.patch(
-        "nerdd_backend.lifespan.InitializeAppLifespan.get_repository",
+        "nerdd_backend.main.get_repository",
         return_value=repository,
     )
 

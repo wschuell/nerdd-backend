@@ -1,16 +1,18 @@
 import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
 
 import hydra
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from nerdd_link import KafkaChannel, MemoryChannel, SystemMessage
+from nerdd_link.utils import async_to_sync
 from omegaconf import DictConfig, OmegaConf
 
 from .actions import SaveModuleToDb, SaveResultCheckpointToDb, SaveResultToDb, UpdateJobSize
-from .lifespan import ActionLifespan, CreateModuleLifespan, InitializeAppLifespan
+from .data import MemoryRepository, RethinkDbRepository
+from .lifespan import ActionLifespan, CreateModuleLifespan
 from .routers import jobs_router, modules_router, results_router, sources_router, websockets_router
 
 logging.basicConfig(level=logging.INFO)
@@ -18,9 +20,26 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def create_app(cfg: DictConfig):
+def get_channel(self, config: DictConfig):
+    if config.channel.name == "kafka":
+        return KafkaChannel(config.channel.broker_url)
+    elif config.channel.name == "memory":
+        return MemoryChannel()
+    else:
+        raise ValueError(f"Unsupported channel name: {config.channel.name}")
+
+
+def get_repository(self, config: DictConfig):
+    if config.db.name == "rethinkdb":
+        return RethinkDbRepository(config.db.host, config.db.port, config.db.database_name)
+    elif config.db.name == "memory":
+        return MemoryRepository()
+    else:
+        raise ValueError(f"Unsupported database: {config.db.name}")
+
+
+async def create_app(cfg: DictConfig):
     lifespans = [
-        InitializeAppLifespan(cfg),
         ActionLifespan(lambda app: UpdateJobSize(app.state.channel, app.state.repository, cfg)),
         ActionLifespan(lambda app: SaveModuleToDb(app.state.channel, app.state.repository)),
         ActionLifespan(lambda app: SaveResultToDb(app.state.channel, app.state.repository)),
@@ -80,6 +99,16 @@ def create_app(cfg: DictConfig):
             logger.info("Tasks successfully cancelled")
 
     app = FastAPI(lifespan=lifespan)
+    app.state.repository = repository = get_repository(cfg)
+    app.state.channel = channel = get_channel(cfg)
+    app.state.config = cfg
+
+    await channel.start()
+
+    await repository.initialize()
+
+    if cfg.mock_infra:
+        await channel.system_topic().send(SystemMessage())
 
     origins = [
         "http://localhost",
@@ -105,9 +134,10 @@ def create_app(cfg: DictConfig):
 
 
 @hydra.main(version_base=None, config_path="settings", config_name="config")
-def main(cfg: DictConfig) -> None:
+@async_to_sync
+async def main(cfg: DictConfig) -> None:
     logger.info(f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}")
-    app = create_app(cfg)
+    app = await create_app(cfg)
 
     uvicorn.run(
         app,
