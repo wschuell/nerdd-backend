@@ -6,7 +6,7 @@ import hydra
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from nerdd_link import KafkaChannel, MemoryChannel, SystemMessage
+from nerdd_link import FileSystem, KafkaChannel, MemoryChannel, SystemMessage
 from nerdd_link.utils import async_to_sync
 from omegaconf import DictConfig, OmegaConf
 
@@ -50,7 +50,12 @@ async def create_app(cfg: DictConfig):
     ]
 
     if cfg.mock_infra:
-        from nerdd_link import PredictCheckpointsAction, ProcessJobsAction, RegisterModuleAction
+        from nerdd_link import (
+            PredictCheckpointsAction,
+            ProcessJobsAction,
+            RegisterModuleAction,
+            SerializeJobAction,
+        )
         from nerdd_module.tests import MolWeightModel
 
         model = MolWeightModel()
@@ -72,6 +77,9 @@ async def create_app(cfg: DictConfig):
                     max_num_lines_mol_block=10_000,
                     data_dir=cfg.media_root,
                 )
+            ),
+            ActionLifespan(
+                lambda app: SerializeJobAction(app.state.channel, model, cfg.media_root)
             ),
         ]
 
@@ -101,6 +109,7 @@ async def create_app(cfg: DictConfig):
     app = FastAPI(lifespan=global_lifespan)
     app.state.repository = repository = get_repository(cfg)
     app.state.channel = channel = get_channel(cfg)
+    app.state.filesystem = FileSystem(cfg.media_root)
     app.state.config = cfg
 
     await channel.start()
@@ -139,11 +148,9 @@ async def main(cfg: DictConfig) -> None:
     logger.info(f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}")
     app = await create_app(cfg)
 
-    uvicorn.run(
-        app,
-        host=cfg.host,
-        port=cfg.port,
-    )
+    config = uvicorn.Config(app, host=cfg.host, port=cfg.port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 if __name__ == "__main__":
