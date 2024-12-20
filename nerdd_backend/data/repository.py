@@ -38,7 +38,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def create_module(self, module: Module) -> None:
+    async def create_module(self, module: Module) -> Module:
         pass
 
     #
@@ -49,7 +49,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def create_job(self, job: Job) -> None:
+    async def create_job(self, job: Job) -> JobInternal:
         pass
 
     @abstractmethod
@@ -68,7 +68,7 @@ class Repository(ABC):
     # SOURCES
     #
     @abstractmethod
-    async def create_source(self, source: Source) -> None:
+    async def create_source(self, source: Source) -> Source:
         pass
 
     @abstractmethod
@@ -96,7 +96,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def create_result(self, result: Result) -> None:
+    async def create_result(self, result: Result) -> Result:
         pass
 
     @abstractmethod

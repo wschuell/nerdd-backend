@@ -34,13 +34,14 @@ class MemoryRepository(Repository):
     async def get_all_modules(self) -> List[Module]:
         return self.modules.get_items()
 
-    async def create_module(self, module: Module) -> None:
+    async def create_module(self, module: Module) -> Module:
         assert module.id is not None
         try:
             await self.get_module_by_id(module.id)
             raise RecordAlreadyExistsError(Module, module.id)
         except RecordNotFoundError:
             self.modules.append(module)
+            return module
 
     async def get_module_by_id(self, id: str) -> Module:
         try:
@@ -58,12 +59,14 @@ class MemoryRepository(Repository):
             if (old is not None and old.id == job_id) or (new is not None and new.id == job_id):
                 yield (old, new)
 
-    async def create_job(self, job: Job) -> None:
+    async def create_job(self, job: Job) -> JobInternal:
         try:
             await self.get_job_by_id(job.id)
             raise RecordAlreadyExistsError(Job, job.id)
         except RecordNotFoundError:
-            self.jobs.append(JobInternal(**job.model_dump()))
+            result = JobInternal(**job.model_dump())
+            self.jobs.append(result)
+            return result
 
     async def update_job(self, job: JobUpdate) -> JobInternal:
         existing_job = await self.get_job_by_id(job.id)
@@ -94,12 +97,13 @@ class MemoryRepository(Repository):
     #
     # SOURCES
     #
-    async def create_source(self, source: Source) -> None:
+    async def create_source(self, source: Source) -> Source:
         try:
-            existing_source = await self.get_source_by_id(source.id)
+            await self.get_source_by_id(source.id)
             raise RecordAlreadyExistsError(Source, source.id)
         except RecordNotFoundError:
             self.sources.append(source)
+            return source
 
     async def get_source_by_id(self, id: str) -> Source:
         try:
