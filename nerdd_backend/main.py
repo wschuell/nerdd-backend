@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def get_channel(self, config: DictConfig):
+def get_channel(config: DictConfig):
     if config.channel.name == "kafka":
         return KafkaChannel(config.channel.broker_url)
     elif config.channel.name == "memory":
@@ -29,7 +29,7 @@ def get_channel(self, config: DictConfig):
         raise ValueError(f"Unsupported channel name: {config.channel.name}")
 
 
-def get_repository(self, config: DictConfig):
+def get_repository(config: DictConfig):
     if config.db.name == "rethinkdb":
         return RethinkDbRepository(config.db.host, config.db.port, config.db.database_name)
     elif config.db.name == "memory":
@@ -76,7 +76,7 @@ async def create_app(cfg: DictConfig):
         ]
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def global_lifespan(app: FastAPI):
         logger.info("Starting tasks")
         # TODO: run tasks sequentially, because there might be dependencies
         start_tasks = asyncio.gather(
@@ -98,7 +98,7 @@ async def create_app(cfg: DictConfig):
         except asyncio.CancelledError:
             logger.info("Tasks successfully cancelled")
 
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(lifespan=global_lifespan)
     app.state.repository = repository = get_repository(cfg)
     app.state.channel = channel = get_channel(cfg)
     app.state.config = cfg
