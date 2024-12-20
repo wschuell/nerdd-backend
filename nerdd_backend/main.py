@@ -9,15 +9,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from omegaconf import DictConfig, OmegaConf
 
-from .actions import SaveModuleToDb, SaveResultToDb, UpdateJobSize
+from .actions import SaveModuleToDb, SaveResultCheckpointToDb, SaveResultToDb, UpdateJobSize
 from .lifespan import ActionLifespan, CreateModuleLifespan, InitializeAppLifespan
-from .routers import (
-    jobs_router,
-    modules_router,
-    results_router,
-    sources_router,
-    websockets_router,
-)
+from .routers import jobs_router, modules_router, results_router, sources_router, websockets_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -27,24 +21,17 @@ logger = logging.getLogger(__name__)
 def create_app(cfg: DictConfig):
     lifespans = [
         InitializeAppLifespan(cfg),
+        ActionLifespan(lambda app: UpdateJobSize(app.state.channel, app.state.repository, cfg)),
+        ActionLifespan(lambda app: SaveModuleToDb(app.state.channel, app.state.repository)),
+        ActionLifespan(lambda app: SaveResultToDb(app.state.channel, app.state.repository)),
         ActionLifespan(
-            lambda app: UpdateJobSize(app.state.channel, app.state.repository)
-        ),
-        ActionLifespan(
-            lambda app: SaveModuleToDb(app.state.channel, app.state.repository)
-        ),
-        ActionLifespan(
-            lambda app: SaveResultToDb(app.state.channel, app.state.repository)
+            lambda app: SaveResultCheckpointToDb(app.state.channel, app.state.repository, cfg)
         ),
         CreateModuleLifespan(),
     ]
 
     if cfg.mock_infra:
-        from nerdd_link import (
-            PredictCheckpointsAction,
-            ProcessJobsAction,
-            RegisterModuleAction,
-        )
+        from nerdd_link import PredictCheckpointsAction, ProcessJobsAction, RegisterModuleAction
         from nerdd_module.tests import MolWeightModel
 
         model = MolWeightModel()
@@ -53,9 +40,7 @@ def create_app(cfg: DictConfig):
             *lifespans,
             ActionLifespan(lambda app: RegisterModuleAction(app.state.channel, model)),
             ActionLifespan(
-                lambda app: PredictCheckpointsAction(
-                    app.state.channel, model, cfg.media_root
-                )
+                lambda app: PredictCheckpointsAction(app.state.channel, model, cfg.media_root)
             ),
             ActionLifespan(
                 lambda app: ProcessJobsAction(
@@ -74,6 +59,7 @@ def create_app(cfg: DictConfig):
     @asynccontextmanager
     async def lifespan(app: FastAPI):
         logger.info("Starting tasks")
+        # TODO: run tasks sequentially, because there might be dependencies
         start_tasks = asyncio.gather(
             *[asyncio.create_task(lifespan.start(app)) for lifespan in lifespans]
         )
@@ -81,9 +67,7 @@ def create_app(cfg: DictConfig):
         await start_tasks
 
         logger.info("Running tasks")
-        run_tasks = asyncio.gather(
-            *[asyncio.create_task(lifespan.run()) for lifespan in lifespans]
-        )
+        run_tasks = asyncio.gather(*[asyncio.create_task(lifespan.run()) for lifespan in lifespans])
 
         yield
 
@@ -122,9 +106,7 @@ def create_app(cfg: DictConfig):
 
 @hydra.main(version_base=None, config_path="settings", config_name="config")
 def main(cfg: DictConfig) -> None:
-    logger.info(
-        f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}"
-    )
+    logger.info(f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}")
     app = create_app(cfg)
 
     uvicorn.run(
