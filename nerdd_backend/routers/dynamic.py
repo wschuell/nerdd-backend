@@ -104,7 +104,7 @@ def get_dynamic_router(module: Module):
     ):
         return await _create_job(inputs, sources, [], params.dict(), request)
 
-    router.get(f"/{module.name}" "/jobs/")(create_simple_job)
+    router.get(f"/{module.name}" "/jobs/", include_in_schema=False)(create_simple_job)
     router.get(f"/{module.name}" "/jobs")(create_simple_job)
 
     #
