@@ -1,3 +1,4 @@
+from asyncio import Lock
 from typing import AsyncIterable, List, Optional, Tuple
 
 from nerdd_link.utils import ObservableList
@@ -17,6 +18,7 @@ class MemoryRepository(Repository):
     # INITIALIZATION
     #
     async def initialize(self) -> None:
+        self.transaction_lock = Lock()
         self.jobs = ObservableList[JobInternal]()
         self.modules = ObservableList[Module]()
         self.sources = ObservableList[Source]()
@@ -36,12 +38,13 @@ class MemoryRepository(Repository):
 
     async def create_module(self, module: Module) -> Module:
         assert module.id is not None
-        try:
-            await self.get_module_by_id(module.id)
-            raise RecordAlreadyExistsError(Module, module.id)
-        except RecordNotFoundError:
-            self.modules.append(module)
-            return module
+        async with self.transaction_lock:
+            try:
+                await self.get_module_by_id(module.id)
+                raise RecordAlreadyExistsError(Module, module.id)
+            except RecordNotFoundError:
+                self.modules.append(module)
+                return module
 
     async def get_module_by_id(self, id: str) -> Module:
         try:
@@ -60,29 +63,31 @@ class MemoryRepository(Repository):
                 yield (old, new)
 
     async def create_job(self, job: Job) -> JobInternal:
-        try:
-            await self.get_job_by_id(job.id)
-            raise RecordAlreadyExistsError(Job, job.id)
-        except RecordNotFoundError:
-            result = JobInternal(**job.model_dump())
-            self.jobs.append(result)
-            return result
+        async with self.transaction_lock:
+            try:
+                await self.get_job_by_id(job.id)
+                raise RecordAlreadyExistsError(Job, job.id)
+            except RecordNotFoundError:
+                result = JobInternal(**job.model_dump())
+                self.jobs.append(result)
+                return result
 
     async def update_job(self, job: JobUpdate) -> JobInternal:
-        existing_job = await self.get_job_by_id(job.id)
-        modified_job = Job(**existing_job.model_dump())
-        if job.status is not None:
-            modified_job.status = job.status
-        if job.num_entries_total is not None:
-            modified_job.num_entries_total = job.num_entries_total
-        if job.num_checkpoints_total is not None:
-            modified_job.num_checkpoints_total = job.num_checkpoints_total
-        if job.new_checkpoints_processed is not None:
-            modified_job.checkpoints_processed.extend(job.new_checkpoints_processed)
-        if job.new_output_formats is not None:
-            modified_job.output_formats.extend(job.new_output_formats)
-        self.jobs.update(existing_job, modified_job)
-        return await self.get_job_by_id(job.id)
+        async with self.transaction_lock:
+            existing_job = await self.get_job_by_id(job.id)
+            modified_job = JobInternal(**existing_job.model_dump())
+            if job.status is not None:
+                modified_job.status = job.status
+            if job.num_entries_total is not None:
+                modified_job.num_entries_total = job.num_entries_total
+            if job.num_checkpoints_total is not None:
+                modified_job.num_checkpoints_total = job.num_checkpoints_total
+            if job.new_checkpoints_processed is not None:
+                modified_job.checkpoints_processed.extend(job.new_checkpoints_processed)
+            if job.new_output_formats is not None:
+                modified_job.output_formats.extend(job.new_output_formats)
+            self.jobs.update(existing_job, modified_job)
+            return await self.get_job_by_id(job.id)
 
     async def get_job_by_id(self, id: str) -> JobInternal:
         try:
@@ -91,19 +96,21 @@ class MemoryRepository(Repository):
             raise RecordNotFoundError(Job, id) from e
 
     async def delete_job_by_id(self, id: str) -> None:
-        job = await self.get_job_by_id(id)
-        self.jobs.remove(job)
+        async with self.transaction_lock:
+            job = await self.get_job_by_id(id)
+            self.jobs.remove(job)
 
     #
     # SOURCES
     #
     async def create_source(self, source: Source) -> Source:
-        try:
-            await self.get_source_by_id(source.id)
-            raise RecordAlreadyExistsError(Source, source.id)
-        except RecordNotFoundError:
-            self.sources.append(source)
-            return source
+        async with self.transaction_lock:
+            try:
+                await self.get_source_by_id(source.id)
+                raise RecordAlreadyExistsError(Source, source.id)
+            except RecordNotFoundError:
+                self.sources.append(source)
+                return source
 
     async def get_source_by_id(self, id: str) -> Source:
         try:
@@ -112,8 +119,9 @@ class MemoryRepository(Repository):
             raise RecordNotFoundError(Source, id) from e
 
     async def delete_source_by_id(self, id: str) -> None:
-        source = await self.get_source_by_id(id)
-        self.sources.remove(source)
+        async with self.transaction_lock:
+            source = await self.get_source_by_id(id)
+            self.sources.remove(source)
 
     #
     # RESULTS
@@ -156,11 +164,12 @@ class MemoryRepository(Repository):
         ]
 
     async def create_result(self, result: Result) -> None:
-        try:
-            await self.get_result_by_id(result.id)
-            raise RecordAlreadyExistsError(Result, result.id)
-        except RecordNotFoundError:
-            self.results.append(result)
+        async with self.transaction_lock:
+            try:
+                await self.get_result_by_id(result.id)
+                raise RecordAlreadyExistsError(Result, result.id)
+            except RecordNotFoundError:
+                self.results.append(result)
 
     async def get_all_results_by_job_id(self, job_id: str) -> List[Result]:
         return [result for result in self.results.get_items() if result.job_id == job_id]
