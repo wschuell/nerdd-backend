@@ -3,7 +3,12 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-__all__ = ["Job", "JobCreate", "JobPublic", "JobUpdate", "JobInternal"]
+__all__ = ["Job", "JobCreate", "JobPublic", "JobUpdate", "JobInternal", "OutputFile"]
+
+
+class OutputFile(BaseModel):
+    format: str
+    url: str
 
 
 class Job(BaseModel):
@@ -33,6 +38,7 @@ class JobPublic(Job):
     num_pages_total: Optional[int]
     num_pages_processed: int
     page_size: int
+    output_files: List[OutputFile]
     job_url: str
     results_url: str
 
