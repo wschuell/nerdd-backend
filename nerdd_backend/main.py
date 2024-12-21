@@ -10,7 +10,13 @@ from nerdd_link import FileSystem, KafkaChannel, MemoryChannel, SystemMessage
 from nerdd_link.utils import async_to_sync
 from omegaconf import DictConfig, OmegaConf
 
-from .actions import SaveModuleToDb, SaveResultCheckpointToDb, SaveResultToDb, UpdateJobSize
+from .actions import (
+    ProcessSerializationResult,
+    SaveModuleToDb,
+    SaveResultCheckpointToDb,
+    SaveResultToDb,
+    UpdateJobSize,
+)
 from .data import MemoryRepository, RethinkDbRepository
 from .lifespan import ActionLifespan, CreateModuleLifespan
 from .routers import jobs_router, modules_router, results_router, sources_router, websockets_router
@@ -45,6 +51,9 @@ async def create_app(cfg: DictConfig):
         ActionLifespan(lambda app: SaveResultToDb(app.state.channel, app.state.repository)),
         ActionLifespan(
             lambda app: SaveResultCheckpointToDb(app.state.channel, app.state.repository, cfg)
+        ),
+        ActionLifespan(
+            lambda app: ProcessSerializationResult(app.state.channel, app.state.repository)
         ),
         CreateModuleLifespan(),
     ]
