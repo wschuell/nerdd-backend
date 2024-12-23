@@ -9,3 +9,7 @@ page_size: 5
 media_root: /data
 
 mock_infra: false
+
+output_formats:
+  - sdf
+  - csv

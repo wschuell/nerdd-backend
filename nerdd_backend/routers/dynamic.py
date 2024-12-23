@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Union
+from typing import List, Optional, Union
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, UploadFile
 from pydantic import create_model, model_validator
@@ -77,9 +77,15 @@ def get_dynamic_router(module: Module):
         request: Request = None,
     ):
         if "job_type" in params and params["job_type"] != module.name:
-            return HTTPException(
+            raise HTTPException(
                 status_code=400,
                 detail="job_type was specified, but it does not match the module name",
+            )
+
+        if len(inputs) == 0 and len(sources) == 0:
+            raise HTTPException(
+                status_code=400,
+                detail="At least one input or source must be provided",
             )
 
         result_source = await put_multiple_sources(inputs, sources, files, request)
@@ -97,14 +103,18 @@ def get_dynamic_router(module: Module):
     # GET /jobs
     #
     async def create_simple_job(
-        inputs: List[str] = Query(),
-        sources: List[str] = Query(),
+        inputs: Optional[List[str]] = Query(default=None),
+        sources: Optional[List[str]] = Query(default=None),
         params: QueryModelGet = Depends(),
         request: Request = None,
     ):
-        return await _create_job(inputs, sources, [], params.dict(), request)
+        if inputs is None:
+            inputs = []
+        if sources is None:
+            sources = []
+        return await _create_job(inputs, sources, [], params.model_dump(), request)
 
-    router.get(f"/{module.name}" "/jobs/")(create_simple_job)
+    router.get(f"/{module.name}" "/jobs/", include_in_schema=False)(create_simple_job)
     router.get(f"/{module.name}" "/jobs")(create_simple_job)
 
     #

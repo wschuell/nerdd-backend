@@ -41,7 +41,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mypy~=0.981", "ruff", "ipykernel~=6.19.4"]
+dev = ["mypy~=0.981", "ruff", "ipykernel~=6.19.4", "types-aiofiles"]
 test = [
     "pytest",
     "pytest-watch",

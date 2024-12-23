@@ -7,6 +7,6 @@ from .async_step import async_step
 @async_step
 async def mock_channel(mocker, channel):
     mocker.patch(
-        "nerdd_backend.lifespan.InitializeAppLifespan.get_channel",
+        "nerdd_backend.main.get_channel",
         return_value=channel,
     )

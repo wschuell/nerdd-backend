@@ -8,6 +8,7 @@ from uuid import uuid4
 import aiofiles
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 from fastapi.encoders import jsonable_encoder
+from nerdd_link import FileSystem
 
 from ..data import RecordNotFoundError, Repository
 from ..models import Source, SourcePublic
@@ -22,15 +23,13 @@ sources_router = APIRouter(prefix="/sources")
 async def put_source(file: UploadFile, format: Optional[str] = None, request: Request = None):
     app = request.app
     repository: Repository = app.state.repository
-    media_root = app.state.config.media_root
+    filesystem: FileSystem = app.state.filesystem
 
     # create uuid
     uuid = uuid4()
 
     # create path to new file
-    # TODO: use FileSystem
-    path = os.path.join(media_root, "sources", str(uuid))
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    path = filesystem.get_source_file_path(str(uuid))
 
     # store file
     async with aiofiles.open(path, "wb") as out_file:
@@ -43,7 +42,7 @@ async def put_source(file: UploadFile, format: Optional[str] = None, request: Re
         format=format,
         filename=file.filename,
     )
-    await repository.upsert_source(source)
+    source = await repository.create_source(source)
 
     return SourcePublic(**source.model_dump())
 
@@ -64,7 +63,7 @@ async def get_source(uuid: str, request: Request):
 async def delete_source(uuid: str, request: Request):
     app = request.app
     repository: Repository = app.state.repository
-    media_root = app.state.config.media_root
+    filesystem: FileSystem = app.state.filesystem
 
     try:
         await repository.get_source_by_id(uuid)
@@ -72,8 +71,7 @@ async def delete_source(uuid: str, request: Request):
         raise HTTPException(status_code=404, detail="Source not found") from e
 
     # delete file from disk
-    # TODO: use FileSystem
-    path = os.path.join(media_root, "sources", str(uuid))
+    path = filesystem.get_source_file_path(str(uuid))
     os.remove(path)
 
     # delete source from database

@@ -25,7 +25,7 @@ async def client(data_dir):
     cfg.media_root = data_dir
 
     # create app
-    app = create_app(cfg)
+    app = await create_app(cfg)
 
     # run app
     async with LifespanManager(app):
@@ -88,6 +88,11 @@ def check_response_contains(response, expected_response):
             key in response.json() and response.json()[key] == value
             for key, value in decoded.items()
         ), f"Expected {decoded}, got {response.json()}"
+
+
+@then(parsers.parse("the client receives a response of length {expected_length:d}"))
+def check_response_length(response, expected_length):
+    assert len(response.json()) == expected_length, f"Expected {expected_length}, got {response.json()}"
 
 
 @when(parsers.parse("we wait for {seconds:d} seconds"))

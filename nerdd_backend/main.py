@@ -1,40 +1,59 @@
 import asyncio
 import logging
-import os
 from contextlib import asynccontextmanager
 
 import hydra
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from nerdd_link import FileSystem, KafkaChannel, MemoryChannel, SystemMessage
+from nerdd_link.utils import async_to_sync
 from omegaconf import DictConfig, OmegaConf
 
-from .actions import SaveModuleToDb, SaveResultToDb, UpdateJobSize
-from .lifespan import ActionLifespan, CreateModuleLifespan, InitializeAppLifespan
-from .routers import (
-    jobs_router,
-    modules_router,
-    results_router,
-    sources_router,
-    websockets_router,
+from .actions import (
+    ProcessSerializationResult,
+    SaveModuleToDb,
+    SaveResultCheckpointToDb,
+    SaveResultToDb,
+    UpdateJobSize,
 )
+from .data import MemoryRepository, RethinkDbRepository
+from .lifespan import ActionLifespan, CreateModuleLifespan
+from .routers import jobs_router, modules_router, results_router, sources_router, websockets_router
 
 logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
 
-def create_app(cfg: DictConfig):
+def get_channel(config: DictConfig):
+    if config.channel.name == "kafka":
+        return KafkaChannel(config.channel.broker_url)
+    elif config.channel.name == "memory":
+        return MemoryChannel()
+    else:
+        raise ValueError(f"Unsupported channel name: {config.channel.name}")
+
+
+def get_repository(config: DictConfig):
+    if config.db.name == "rethinkdb":
+        return RethinkDbRepository(config.db.host, config.db.port, config.db.database_name)
+    elif config.db.name == "memory":
+        return MemoryRepository()
+    else:
+        raise ValueError(f"Unsupported database: {config.db.name}")
+
+
+async def create_app(cfg: DictConfig):
     lifespans = [
-        InitializeAppLifespan(cfg),
+        ActionLifespan(lambda app: UpdateJobSize(app.state.channel, app.state.repository, cfg)),
+        ActionLifespan(lambda app: SaveModuleToDb(app.state.channel, app.state.repository)),
+        ActionLifespan(lambda app: SaveResultToDb(app.state.channel, app.state.repository)),
         ActionLifespan(
-            lambda app: UpdateJobSize(app.state.channel, app.state.repository)
+            lambda app: SaveResultCheckpointToDb(app.state.channel, app.state.repository, cfg)
         ),
         ActionLifespan(
-            lambda app: SaveModuleToDb(app.state.channel, app.state.repository)
-        ),
-        ActionLifespan(
-            lambda app: SaveResultToDb(app.state.channel, app.state.repository)
+            lambda app: ProcessSerializationResult(app.state.channel, app.state.repository)
         ),
         CreateModuleLifespan(),
     ]
@@ -44,6 +63,7 @@ def create_app(cfg: DictConfig):
             PredictCheckpointsAction,
             ProcessJobsAction,
             RegisterModuleAction,
+            SerializeJobAction,
         )
         from nerdd_module.tests import MolWeightModel
 
@@ -53,9 +73,7 @@ def create_app(cfg: DictConfig):
             *lifespans,
             ActionLifespan(lambda app: RegisterModuleAction(app.state.channel, model)),
             ActionLifespan(
-                lambda app: PredictCheckpointsAction(
-                    app.state.channel, model, cfg.media_root
-                )
+                lambda app: PredictCheckpointsAction(app.state.channel, model, cfg.media_root)
             ),
             ActionLifespan(
                 lambda app: ProcessJobsAction(
@@ -69,11 +87,15 @@ def create_app(cfg: DictConfig):
                     data_dir=cfg.media_root,
                 )
             ),
+            ActionLifespan(
+                lambda app: SerializeJobAction(app.state.channel, model, cfg.media_root)
+            ),
         ]
 
     @asynccontextmanager
-    async def lifespan(app: FastAPI):
+    async def global_lifespan(app: FastAPI):
         logger.info("Starting tasks")
+        # TODO: run tasks sequentially, because there might be dependencies
         start_tasks = asyncio.gather(
             *[asyncio.create_task(lifespan.start(app)) for lifespan in lifespans]
         )
@@ -81,9 +103,7 @@ def create_app(cfg: DictConfig):
         await start_tasks
 
         logger.info("Running tasks")
-        run_tasks = asyncio.gather(
-            *[asyncio.create_task(lifespan.run()) for lifespan in lifespans]
-        )
+        run_tasks = asyncio.gather(*[asyncio.create_task(lifespan.run()) for lifespan in lifespans])
 
         yield
 
@@ -95,7 +115,18 @@ def create_app(cfg: DictConfig):
         except asyncio.CancelledError:
             logger.info("Tasks successfully cancelled")
 
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(lifespan=global_lifespan)
+    app.state.repository = repository = get_repository(cfg)
+    app.state.channel = channel = get_channel(cfg)
+    app.state.filesystem = FileSystem(cfg.media_root)
+    app.state.config = cfg
+
+    await channel.start()
+
+    await repository.initialize()
+
+    if cfg.mock_infra:
+        await channel.system_topic().send(SystemMessage())
 
     origins = [
         "http://localhost",
@@ -121,17 +152,14 @@ def create_app(cfg: DictConfig):
 
 
 @hydra.main(version_base=None, config_path="settings", config_name="config")
-def main(cfg: DictConfig) -> None:
-    logger.info(
-        f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}"
-    )
-    app = create_app(cfg)
+@async_to_sync
+async def main(cfg: DictConfig) -> None:
+    logger.info(f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}")
+    app = await create_app(cfg)
 
-    uvicorn.run(
-        app,
-        host=cfg.host,
-        port=cfg.port,
-    )
+    config = uvicorn.Config(app, host=cfg.host, port=cfg.port, log_level="info")
+    server = uvicorn.Server(config)
+    await server.serve()
 
 
 if __name__ == "__main__":

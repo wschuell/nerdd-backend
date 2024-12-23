@@ -1,19 +1,19 @@
 import math
-from time import time
 from uuid import uuid4
 
 from fastapi import APIRouter, Body, HTTPException, Request
-from nerdd_link import JobMessage
+from fastapi.responses import FileResponse
+from nerdd_link import FileSystem, JobMessage
 
 from ..data import RecordNotFoundError
-from ..models import Job, JobCreate, JobPublic
+from ..models import Job, JobCreate, JobInternal, JobPublic, OutputFile
 
 __all__ = ["jobs_router"]
 
 jobs_router = APIRouter(prefix="/jobs")
 
 
-async def augment_job(job: Job, request: Request) -> JobPublic:
+async def augment_job(job: JobInternal, request: Request) -> JobPublic:
     app = request.app
     repository = app.state.repository
     page_size = app.state.config.page_size
@@ -31,6 +31,12 @@ async def augment_job(job: Job, request: Request) -> JobPublic:
     else:
         num_pages_total = None
 
+    # get output files
+    output_files = [
+        OutputFile(format=format, url=f"{request.base_url}jobs/{job.id}/output.{format}")
+        for format in job.output_formats
+    ]
+
     return JobPublic(
         **job.model_dump(),
         job_url=f"{request.base_url}jobs/{job.id}",
@@ -39,11 +45,12 @@ async def augment_job(job: Job, request: Request) -> JobPublic:
         num_pages_processed=num_pages_processed,
         num_pages_total=num_pages_total,
         page_size=page_size,
+        output_files=output_files,
     )
 
 
-@jobs_router.post("", include_in_schema=False)
-@jobs_router.post("/")
+@jobs_router.post("/", include_in_schema=False)
+@jobs_router.post("")
 async def create_job(job: JobCreate = Body(), request: Request = None):
     app = request.app
     repository = app.state.repository
@@ -52,8 +59,9 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
     job_id = uuid4()
 
     # check if module exists
-    module = await repository.get_module_by_id(job.job_type)
-    if module is None:
+    try:
+        await repository.get_module_by_id(job.job_type)
+    except RecordNotFoundError as e:
         all_modules = await repository.get_all_modules()
         valid_options = [module.id for module in all_modules]
         raise HTTPException(
@@ -62,7 +70,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
                 f"Module {job.job_type} not found. "
                 f"Valid options are: {', '.join(valid_options)}"
             ),
-        )
+        ) from e
 
     # check if source exists
     try:
@@ -70,7 +78,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
     except RecordNotFoundError as e:
         raise HTTPException(status_code=404, detail="Source not found") from e
 
-    result = Job(
+    job_new = Job(
         id=str(job_id),
         job_type=job.job_type,
         source_id=job.source_id,
@@ -80,7 +88,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
 
     # We have to create the job in the database, because the user will fetch the created job
     # in the next request. There is no time for sending it to Kafka and consuming the job record.
-    await repository.upsert_job(result)
+    job_internal = await repository.create_job(job_new)
 
     # send job to kafka
     await channel.jobs_topic().send(
@@ -93,9 +101,10 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
     )
 
     # return the response
-    return await augment_job(result, request)
+    return await augment_job(job_internal, request)
 
 
+@jobs_router.delete("/{job_id}/", include_in_schema=False)
 @jobs_router.delete("/{job_id}")
 async def delete_job(job_id: str, request: Request):
     app = request.app
@@ -107,9 +116,45 @@ async def delete_job(job_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Job not found") from e
 
     await repository.delete_job_by_id(job_id)
-    return {"message": "Job deleted"}
+
+    return {"message": "Job deleted successfully"}
 
 
+@jobs_router.get("/{job_id}/output.{format}/", include_in_schema=False)
+@jobs_router.get("/{job_id}/output.{format}")
+async def get_output_file(job_id: str, format: str, request: Request):
+    app = request.app
+    repository = app.state.repository
+    config = app.state.config
+    filesystem: FileSystem = app.state.filesystem
+
+    try:
+        job = await repository.get_job_by_id(job_id)
+    except RecordNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Job not found") from e
+
+    if format not in config.output_formats:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Format {format} not supported. "
+                f"Valid options are: {', '.join(config.output_formats)}"
+            ),
+        )
+
+    if format not in job.output_formats:
+        raise HTTPException(
+            status_code=202,
+            detail=(
+                "Output format not available yet. Please wait until the computation is finished."
+            ),
+        )
+
+    filepath = filesystem.get_output_file(job_id, format)
+    return FileResponse(filepath, filename=f"{job.job_type}-{job_id}.{format}")
+
+
+@jobs_router.get("/{job_id}/", include_in_schema=False)
 @jobs_router.get("/{job_id}")
 async def get_job(job_id: str, request: Request):
     app = request.app
