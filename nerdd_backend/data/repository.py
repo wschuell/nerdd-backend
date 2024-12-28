@@ -45,7 +45,9 @@ class Repository(ABC):
     # JOBS
     #
     @abstractmethod
-    def get_job_changes(self, job_id: str) -> AsyncIterable[Tuple[Optional[Job], Optional[Job]]]:
+    def get_job_changes(
+        self, job_id: str
+    ) -> AsyncIterable[Tuple[Optional[JobInternal], Optional[JobInternal]]]:
         pass
 
     @abstractmethod

@@ -57,7 +57,7 @@ class MemoryRepository(Repository):
     #
     async def get_job_changes(
         self, job_id: str
-    ) -> AsyncIterable[Tuple[Optional[Job], Optional[Job]]]:
+    ) -> AsyncIterable[Tuple[Optional[JobInternal], Optional[JobInternal]]]:
         async for old, new in self.jobs.changes():
             if (old is not None and old.id == job_id) or (new is not None and new.id == job_id):
                 yield (old, new)
