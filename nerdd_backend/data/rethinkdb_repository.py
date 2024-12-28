@@ -5,7 +5,7 @@ from typing import Any, AsyncIterable, Dict, List, Optional, Tuple
 from rethinkdb import RethinkDB
 from rethinkdb.errors import ReqlOpFailedError
 
-from ..models import Job, Module, Result, Source
+from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
 from .exceptions import RecordNotFoundError
 from .repository import Repository
 
@@ -103,18 +103,43 @@ class RethinkDbRepository(Repository):
 
     #     return Module(**result)
 
-    async def upsert_module(self, module: Module) -> None:
-        # insert the module (or update if it matches an existing name-version combo)
-        await (
+    async def create_module(self, module: Module) -> Module:
+        result = await (
             self.r.db(self.database_name)
             .table("modules")
-            .insert(module.model_dump(), conflict="update")
+            .insert(module.model_dump(), conflict="error", return_changes=True)
             .run(self.connection)
         )
+
+        return Module(**result["changes"][0]["new_val"])
 
     #
     # JOBS
     #
+    async def get_job_changes(
+        self, job_id: str
+    ) -> AsyncIterable[Tuple[Optional[JobInternal], Optional[JobInternal]]]:
+        cursor = (
+            await self.r.db(self.database_name)
+            .table("jobs")
+            .filter(self.r.row["job_id"] == job_id)
+            .changes(include_initial=False)
+            .run(self.connection)
+        )
+
+        async for change in cursor:
+            if change["old_val"] is None:
+                old_job = None
+            else:
+                old_job = JobInternal(**change["old_val"])
+
+            if change["new_val"] is None:
+                new_job = None
+            else:
+                new_job = JobInternal(**change["new_val"])
+
+            yield old_job, new_job
+
     async def create_jobs_table(self) -> None:
         try:
             await (
@@ -125,21 +150,53 @@ class RethinkDbRepository(Repository):
         except ReqlOpFailedError:
             pass
 
-    async def upsert_job(self, job: Job) -> None:
-        await (
+    async def create_job(self, job: Job) -> JobInternal:
+        job = JobInternal(**job.model_dump())
+        result = await (
             self.r.db(self.database_name)
             .table("jobs")
-            .insert(job.model_dump(), conflict="update")
+            .insert(job, conflict="error", return_changes=True)
+            .run(self.connection)
+        )
+        return JobInternal(**result["changes"][0]["new_val"])
+
+    async def update_job(self, job: JobUpdate) -> JobInternal:
+        update_set = {}
+        if job.status is not None:
+            update_set["status"] = job.status
+        if job.num_entries_total is not None:
+            update_set["num_entries_total"] = job.num_entries_total
+        if job.num_checkpoints_total is not None:
+            update_set["num_checkpoints_total"] = job.num_checkpoints_total
+        if job.new_checkpoints_processed is not None:
+            update_set["checkpoints_processed"] = self.r.row["checkpoints_processed"].union(
+                job.new_checkpoints_processed
+            )
+        if job.new_output_formats is not None:
+            update_set["output_formats"] = self.r.row["output_formats"].union(
+                job.new_output_formats
+            )
+
+        changes = (
+            await self.r.db(self.database_name)
+            .table("jobs")
+            .get(job.id)
+            .update(update_set, return_changes=True)
             .run(self.connection)
         )
 
-    async def get_job_by_id(self, job_id: str) -> Job:
+        if len(changes["changes"]) == 0:
+            raise RecordNotFoundError(Job, job.id)
+
+        return JobInternal(**changes["changes"][0]["new_val"])
+
+    async def get_job_by_id(self, job_id: str) -> JobInternal:
         result = await self.r.db(self.database_name).table("jobs").get(job_id).run(self.connection)
 
         if result is None:
             raise RecordNotFoundError(Job, job_id)
 
-        return Job(**result)
+        return JobInternal(**result)
 
     async def delete_job_by_id(self, job_id: str) -> None:
         await self.r.db(self.database_name).table("jobs").get(job_id).delete().run(self.connection)
@@ -157,13 +214,18 @@ class RethinkDbRepository(Repository):
         except ReqlOpFailedError:
             pass
 
-    async def upsert_source(self, source: Source) -> None:
-        await (
+    async def create_source(self, source: Source) -> Source:
+        result = await (
             self.r.db(self.database_name)
             .table("sources")
-            .insert(source.model_dump(), conflict="update")
+            .insert(source.model_dump(), conflict="error", return_changes=True)
             .run(self.connection)
         )
+
+        if len(result["changes"]) == 0:
+            raise RecordNotFoundError(Source, source.id)
+
+        return Source(**result["changes"][0]["new_val"])
 
     async def get_source_by_id(self, source_id: str) -> Source:
         result = (
@@ -240,38 +302,13 @@ class RethinkDbRepository(Repository):
 
         return [Result(**item) async for item in cursor]
 
-    async def upsert_result(self, result: Result) -> None:
+    async def create_result(self, result: Result) -> Result:
         await (
             self.r.db(self.database_name)
             .table("results")
             .insert(result.model_dump(), conflict="update")
             .run(self.connection)
         )
-
-    async def get_job_changes(
-        self, job_id: str
-    ) -> AsyncIterable[Tuple[Optional[Job], Optional[Job]]]:
-        cursor = (
-            await self.r.db(self.database_name)
-            .table("results")
-            .filter(self.r.row["job_id"] == job_id)
-            .pluck("mol_id")
-            .changes(include_initial=False)
-            .run(self.connection)
-        )
-
-        async for change in cursor:
-            if change["old_val"] is None:
-                old_job = None
-            else:
-                old_job = Job(**change["old_val"])
-
-            if change["new_val"] is None:
-                new_job = None
-            else:
-                new_job = Job(**change["new_val"])
-
-            yield old_job, new_job
 
     async def get_result_changes(
         self,
