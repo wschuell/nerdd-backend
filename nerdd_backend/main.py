@@ -151,7 +151,7 @@ async def create_app(cfg: DictConfig):
     return app
 
 
-@hydra.main(version_base=None, config_path="settings", config_name="config")
+@hydra.main(version_base=None, config_path="settings", config_name="development")
 @async_to_sync
 async def main(cfg: DictConfig) -> None:
     logger.info(f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}")
