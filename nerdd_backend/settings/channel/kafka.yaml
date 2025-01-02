@@ -1,7 +1,2 @@
 name: kafka
-# If env is set to true, try to get the broker url from the environment
-# variable KAFKA_BROKER_URL if it is defined. Otherwise (if env is set
-# to false or the variable is not defined), use the fallback value below.
-env: true
-# fallback value:
 broker_url: my-cluster-kafka-bootstrap.kafka:9092
