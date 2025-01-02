@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel
@@ -11,7 +11,7 @@ class Source(BaseModel):
     format: Optional[str] = None
     # the filename that was provided by the user
     filename: Optional[str] = None
-    created_at: datetime = datetime.now()
+    created_at: datetime = datetime.now(timezone.utc)
 
 
 class SourcePublic(Source):

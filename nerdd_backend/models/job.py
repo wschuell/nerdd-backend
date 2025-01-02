@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
@@ -16,7 +16,7 @@ class Job(BaseModel):
     job_type: str
     source_id: str
     params: dict
-    created_at: datetime = datetime.now()
+    created_at: datetime = datetime.now(timezone.utc)
     status: str
     num_entries_total: Optional[int] = None
 
