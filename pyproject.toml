@@ -22,7 +22,7 @@ classifiers = [
 ]
 dependencies = [
     "nerdd-module>=0.1.0",
-    "nerdd-link>=0.1.0",
+    "nerdd-link>=0.2.3",
     "fastapi~=0.103.2",
     "uvicorn[standard]~=0.23.2",
     "aiokafka~=0.12.0",

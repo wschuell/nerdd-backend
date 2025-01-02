@@ -17,10 +17,11 @@ class SaveModuleToDb(Action[ModuleMessage]):
 
     async def _process_message(self, message: ModuleMessage) -> None:
         logger.info(f"Creating a new module called {message.name}")
+        module = Module(**message.model_dump())
         try:
-            await self.repository.create_module(Module(**message.model_dump()))
+            await self.repository.create_module(module)
         except RecordAlreadyExistsError:
-            logger.info(f"Module with id {message.id} already exists in the database")
+            logger.info(f"Module with id {module.id} already exists in the database")
 
     def _get_group_name(self):
         return "save-module-to-db"
