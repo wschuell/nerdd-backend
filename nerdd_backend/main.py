@@ -19,7 +19,7 @@ from .actions import (
 )
 from .data import MemoryRepository, RethinkDbRepository
 from .lifespan import ActionLifespan, CreateModuleLifespan
-from .routers import jobs_router, modules_router, results_router, sources_router, websockets_router
+from .routers import jobs_router, modules_router, results_router, sources_router, websockets_router, get_dynamic_router
 
 logging.basicConfig(level=logging.INFO)
 
@@ -147,6 +147,9 @@ async def create_app(cfg: DictConfig):
     app.include_router(results_router)
     app.include_router(modules_router)
     app.include_router(websockets_router)
+
+    for module in await repository.get_all_modules():
+        app.include_router(get_dynamic_router(module))
 
     return app
 
