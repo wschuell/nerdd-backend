@@ -19,7 +19,14 @@ from .actions import (
 )
 from .data import MemoryRepository, RethinkDbRepository
 from .lifespan import ActionLifespan, CreateModuleLifespan
-from .routers import jobs_router, modules_router, results_router, sources_router, websockets_router, get_dynamic_router
+from .routers import (
+    get_dynamic_router,
+    jobs_router,
+    modules_router,
+    results_router,
+    sources_router,
+    websockets_router,
+)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -47,7 +54,11 @@ def get_repository(config: DictConfig):
 async def create_app(cfg: DictConfig):
     lifespans = [
         ActionLifespan(lambda app: UpdateJobSize(app.state.channel, app.state.repository, cfg)),
-        ActionLifespan(lambda app: SaveModuleToDb(app.state.channel, app.state.repository)),
+        ActionLifespan(
+            lambda app: SaveModuleToDb(
+                app.state.channel, app.state.repository, app.state.filesystem
+            )
+        ),
         ActionLifespan(lambda app: SaveResultToDb(app.state.channel, app.state.repository)),
         ActionLifespan(
             lambda app: SaveResultCheckpointToDb(app.state.channel, app.state.repository, cfg)
@@ -71,7 +82,9 @@ async def create_app(cfg: DictConfig):
 
         lifespans = [
             *lifespans,
-            ActionLifespan(lambda app: RegisterModuleAction(app.state.channel, model)),
+            ActionLifespan(
+                lambda app: RegisterModuleAction(app.state.channel, model, cfg.media_root)
+            ),
             ActionLifespan(
                 lambda app: PredictCheckpointsAction(app.state.channel, model, cfg.media_root)
             ),
@@ -87,9 +100,7 @@ async def create_app(cfg: DictConfig):
                     data_dir=cfg.media_root,
                 )
             ),
-            ActionLifespan(
-                lambda app: SerializeJobAction(app.state.channel, model, cfg.media_root)
-            ),
+            ActionLifespan(lambda app: SerializeJobAction(app.state.channel, cfg.media_root)),
         ]
 
     @asynccontextmanager
@@ -132,6 +143,10 @@ async def create_app(cfg: DictConfig):
         "http://localhost",
         "http://localhost:8000",
         "http://localhost:3000",
+        "http://dev-nerdd.univie.ac.at",
+        "https://dev-nerdd.univie.ac.at",
+        "http://nerdd.univie.ac.at",
+        "https://nerdd.univie.ac.at",
     ]
 
     app.add_middleware(
