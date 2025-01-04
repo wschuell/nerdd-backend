@@ -42,11 +42,11 @@ def validate_to_json(cls, value):
 
 
 def get_dynamic_router(module: Module):
-    logger.info(f"Creating router for module {module.name}")
+    logger.info(f"Creating router for module {module.id}")
 
     # all methods will be available at /module_name e.g. /cypstrate
     # the parameter tags creates a separate group in the swagger ui
-    router = APIRouter(tags=[module.name])
+    router = APIRouter(tags=[module.id])
 
     #
     # GET /jobs
@@ -76,7 +76,7 @@ def get_dynamic_router(module: Module):
         params: dict,
         request: Request = None,
     ):
-        if "job_type" in params and params["job_type"] != module.name:
+        if "job_type" in params and params["job_type"] != module.id:
             raise HTTPException(
                 status_code=400,
                 detail="job_type was specified, but it does not match the module name",
@@ -92,7 +92,7 @@ def get_dynamic_router(module: Module):
 
         return await create_job(
             job=JobCreate(
-                job_type=module.name,
+                job_type=module.id,
                 source_id=result_source.id,
                 params={k: v for k, v in params.items() if k in field_definitions},
             ),
@@ -114,8 +114,8 @@ def get_dynamic_router(module: Module):
             sources = []
         return await _create_job(inputs, sources, [], params.model_dump(), request)
 
-    router.get(f"/{module.name}" "/jobs/", include_in_schema=False)(create_simple_job)
-    router.get(f"/{module.name}" "/jobs")(create_simple_job)
+    router.get(f"/{module.id}" "/jobs/", include_in_schema=False)(create_simple_job)
+    router.get(f"/{module.id}" "/jobs")(create_simple_job)
 
     #
     # POST /jobs
@@ -138,30 +138,30 @@ def get_dynamic_router(module: Module):
             request,
         )
 
-    router.post(f"/{module.name}" "/jobs")(create_complex_job)
+    router.post(f"/{module.id}" "/jobs")(create_complex_job)
 
     #
     # GET /jobs/{job_id}
     #
-    router.get(f"/{module.name}" "/jobs/{job_id}")(get_job)
+    router.get(f"/{module.id}" "/jobs/{job_id}")(get_job)
 
     #
     # DELETE /jobs/{job_id}
     #
-    router.delete(f"/{module.name}" "/jobs/{job_id}")(delete_job)
+    router.delete(f"/{module.id}" "/jobs/{job_id}")(delete_job)
 
     #
     # GET /jobs/{job_id}/results/{page}
     #
-    router.get(f"/{module.name}" "/jobs/{job_id}/results")(get_results)
+    router.get(f"/{module.id}" "/jobs/{job_id}/results")(get_results)
 
     #
     # websocket endpoints
     #
-    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}")(get_job_ws)
-    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/")(get_job_ws)
+    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}")(get_job_ws)
+    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}/")(get_job_ws)
 
-    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/results")(get_results_ws)
-    router.websocket(f"/websocket/{module.name}" "/jobs/{job_id}/results/")(get_results_ws)
+    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}/results")(get_results_ws)
+    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}/results/")(get_results_ws)
 
     return router

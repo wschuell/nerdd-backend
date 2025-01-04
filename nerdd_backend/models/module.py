@@ -1,23 +1,13 @@
 from typing import Optional
 
 from nerdd_module.config import Module as NerddModule
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel
 
 __all__ = ["Module", "ModulePublic", "ModuleShort"]
 
 
 class Module(NerddModule):
-    @computed_field
-    @property
-    def id(self) -> str:
-        # TODO: incorporate versioning
-        # compute the primary key from name and version
-        # if "version" in module.keys():
-        #     version = module["version"]
-        # else:
-        #     version = "1.0.0"
-        # name = module["name"]
-        return self.name
+    pass
 
 
 class ModulePublic(Module):
