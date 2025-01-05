@@ -15,18 +15,15 @@ jobs_router = APIRouter(prefix="/jobs")
 
 async def augment_job(job: JobInternal, request: Request) -> JobPublic:
     app = request.app
-    repository = app.state.repository
     page_size = app.state.config.page_size
-
-    num_entries_processed = await repository.get_num_processed_entries_by_job_id(job.id)
 
     # The number of processed pages is only valid if the computation has not finished yet. We adapt
     # this number in the if statement below.
-    num_pages_processed = num_entries_processed // page_size
+    num_pages_processed = job.num_entries_processed // page_size
     if job.num_entries_total is not None:
         num_pages_total = math.ceil(job.num_entries_total / page_size)
 
-        if job.num_entries_total == num_entries_processed:
+        if job.num_entries_total == job.num_entries_processed:
             num_pages_processed = num_pages_total
     else:
         num_pages_total = None
@@ -41,7 +38,6 @@ async def augment_job(job: JobInternal, request: Request) -> JobPublic:
         **job.model_dump(),
         job_url=f"{request.base_url}jobs/{job.id}",
         results_url=f"{request.base_url}jobs/{job.id}/results",
-        num_entries_processed=num_entries_processed,
         num_pages_processed=num_pages_processed,
         num_pages_total=num_pages_total,
         page_size=page_size,

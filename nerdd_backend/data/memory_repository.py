@@ -84,6 +84,8 @@ class MemoryRepository(Repository):
             modified_job = JobInternal(**existing_job.model_dump())
             if job.status is not None:
                 modified_job.status = job.status
+            if job.num_entries_processed is not None:
+                modified_job.num_entries_processed = job.num_entries_processed
             if job.num_entries_total is not None:
                 modified_job.num_entries_total = job.num_entries_total
             if job.num_checkpoints_total is not None:

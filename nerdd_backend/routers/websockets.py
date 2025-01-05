@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Query, WebSocket
 from fastapi.encoders import jsonable_encoder
 
 from ..data import RecordNotFoundError
-from .jobs import get_job
+from .jobs import augment_job, get_job
 
 __all__ = ["get_job_ws", "get_results_ws", "websockets_router"]
 
@@ -20,10 +20,10 @@ async def get_job_ws(websocket: WebSocket, job_id: str):
     job = await get_job(job_id, websocket)
     await websocket.send_json(jsonable_encoder(job))
 
-    async for _ in repository.get_job_changes(job_id):
-        # TODO: use the change and augment it
-        job = await get_job(job_id, websocket)
-        await websocket.send_json(jsonable_encoder(job))
+    async for _, new in repository.get_job_changes(job_id):
+        if new is not None:
+            new = await augment_job(new, websocket)
+            await websocket.send_json(jsonable_encoder(new))
 
 
 @websockets_router.websocket("/jobs/{job_id}/results")
@@ -56,6 +56,6 @@ async def get_results_ws(websocket: WebSocket, job_id: str, page: int = Query())
     first_mol_id = page_zero_based * page_size
     last_mol_id = min(first_mol_id + page_size, num_entries) - 1
 
-    async for old, new in repository.get_result_changes(job_id, first_mol_id, last_mol_id):
+    async for _, new in repository.get_result_changes(job_id, first_mol_id, last_mol_id):
         if new is not None:
             await websocket.send_json(jsonable_encoder(new))

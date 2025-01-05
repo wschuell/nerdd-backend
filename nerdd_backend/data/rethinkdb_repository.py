@@ -143,7 +143,7 @@ class RethinkDbRepository(Repository):
         cursor = (
             await self.r.db(self.database_name)
             .table("jobs")
-            .filter(self.r.row["job_id"] == job_id)
+            .get(job_id)
             .changes(include_initial=False)
             .run(self.connection)
         )
@@ -185,6 +185,8 @@ class RethinkDbRepository(Repository):
         update_set = {}
         if job.status is not None:
             update_set["status"] = job.status
+        if job.num_entries_processed is not None:
+            update_set["num_entries_processed"] = job.num_entries_processed
         if job.num_entries_total is not None:
             update_set["num_entries_total"] = job.num_entries_total
         if job.num_checkpoints_total is not None:
