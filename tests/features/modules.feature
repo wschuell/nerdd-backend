@@ -11,10 +11,15 @@ Feature: Modules
             {"name": "mol_scale", "version": "0.1"}
 
     Scenario: Get modules after adding a module
-        When the channel receives a message on topic 'modules' with content
+        Given a file at 'modules/test-1.0.0' with content
             {
+                "id": "test-1.0.0",
                 "name": "test",
                 "version": "1.0.0"
+            }
+        When the channel receives a message on topic 'modules' with content
+            {
+                "id": "test-1.0.0"
             }
         And the client requests /modules
         Then the client receives a response containing 

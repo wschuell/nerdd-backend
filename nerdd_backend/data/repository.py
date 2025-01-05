@@ -41,6 +41,10 @@ class Repository(ABC):
     async def create_module(self, module: Module) -> Module:
         pass
 
+    @abstractmethod
+    async def update_module(self, module: Module) -> Module:
+        pass
+
     #
     # JOBS
     #

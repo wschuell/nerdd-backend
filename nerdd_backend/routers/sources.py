@@ -103,9 +103,11 @@ async def put_multiple_sources(
         all_sources += sources_from_inputs
 
     for source_id in sources:
-        source = await repository.get_source_by_id(source_id)
-        if source is not None:
+        try:
+            source = await repository.get_source_by_id(source_id)
             all_sources.append(source)
+        except RecordNotFoundError:
+            raise HTTPException(status_code=404, detail=f"Source {source_id} not found")
 
     # create one json file referencing all sources
     sources_from_files = await asyncio.gather(*[put_source(request, file=file) for file in files])

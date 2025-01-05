@@ -31,9 +31,12 @@ class SaveResultCheckpointToDb(Action[ResultCheckpointMessage]):
             # send request to write output files
             output_formats = self.config.output_formats
             for output_format in output_formats:
-                await self.channel.serialization_requests_topic(job.job_type).send(
+                await self.channel.serialization_requests_topic().send(
                     SerializationRequestMessage(
-                        job_id=job_id, params=job.params, output_format=output_format
+                        job_id=job_id,
+                        job_type=job.job_type,
+                        params=job.params,
+                        output_format=output_format,
                     )
                 )
 
