@@ -125,11 +125,11 @@ class RethinkDbRepository(Repository):
             self.r.db(self.database_name)
             .table("modules")
             .get(module.id)
-            .replace(module.model_dump(), return_changes=True)
+            .update(module.model_dump(), return_changes=True)
             .run(self.connection)
         )
 
-        if len(result["changes"]) == 0:
+        if result["skipped"] == 1:
             raise RecordNotFoundError(Module, module.id)
 
         return Module(**result["changes"][0]["new_val"])
