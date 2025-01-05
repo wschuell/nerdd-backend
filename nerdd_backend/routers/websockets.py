@@ -55,7 +55,5 @@ async def get_results_ws(websocket: WebSocket, job_id: str, page: int = Query())
     first_mol_id = page_zero_based * page_size
     last_mol_id = min(first_mol_id + page_size, num_entries) - 1
 
-    async for result in repository.get_result_changes(
-        job_id, first_mol_id, last_mol_id
-    ):
+    async for result in repository.get_result_changes(job_id, first_mol_id, last_mol_id):
         await websocket.send_json(jsonable_encoder(result))

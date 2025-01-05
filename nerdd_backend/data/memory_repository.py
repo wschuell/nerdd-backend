@@ -46,6 +46,12 @@ class MemoryRepository(Repository):
                 self.modules.append(module)
                 return module
 
+    async def update_module(self, module: Module) -> Module:
+        async with self.transaction_lock:
+            existing_module = await self.get_module_by_id(module.id)
+            self.modules.update(existing_module, module)
+            return await self.get_module_by_id(module)
+
     async def get_module_by_id(self, id: str) -> Module:
         try:
             return next((module for module in self.modules.get_items() if module.id == id))

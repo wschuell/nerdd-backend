@@ -6,7 +6,7 @@ from rethinkdb import RethinkDB
 from rethinkdb.errors import ReqlOpFailedError
 
 from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
-from .exceptions import RecordNotFoundError, RecordAlreadyExistsError
+from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
 
 __all__ = ["RethinkDbRepository"]
@@ -57,7 +57,7 @@ class RethinkDbRepository(Repository):
             .run(self.connection)
         )
 
-        async for change in cursor:            
+        async for change in cursor:
             if "old_val" not in change or change["old_val"] is None:
                 old_module = None
             else:
@@ -86,7 +86,11 @@ class RethinkDbRepository(Repository):
 
     async def create_module_table(self) -> None:
         try:
-            await self.r.db(self.database_name).table_create("modules").run(self.connection)
+            await (
+                self.r.db(self.database_name)
+                .table_create("modules", primary_key="id")
+                .run(self.connection)
+            )
         except ReqlOpFailedError:
             pass
 
@@ -113,6 +117,20 @@ class RethinkDbRepository(Repository):
 
         if len(result["changes"]) == 0:
             raise RecordAlreadyExistsError(Module, module.id)
+
+        return Module(**result["changes"][0]["new_val"])
+
+    async def update_module(self, module: Module) -> Module:
+        result = await (
+            self.r.db(self.database_name)
+            .table("modules")
+            .get(module.id)
+            .replace(module.model_dump(), return_changes=True)
+            .run(self.connection)
+        )
+
+        if len(result["changes"]) == 0:
+            raise RecordNotFoundError(Module, module.id)
 
         return Module(**result["changes"][0]["new_val"])
 
@@ -288,17 +306,15 @@ class RethinkDbRepository(Repository):
         start_mol_id: Optional[int] = None,
         end_mol_id: Optional[int] = None,
     ) -> List[Result]:
-        start_condition = (self.r.row["mol_id"] >= start_mol_id) if start_mol_id is not None else True
+        start_condition = (
+            (self.r.row["mol_id"] >= start_mol_id) if start_mol_id is not None else True
+        )
         end_condition = (self.r.row["mol_id"] <= end_mol_id) if end_mol_id is not None else True
 
         cursor = (
             await self.r.db(self.database_name)
             .table("results")
-            .filter(
-                (self.r.row["job_id"] == job_id)
-                & start_condition
-                & end_condition
-            )
+            .filter((self.r.row["job_id"] == job_id) & start_condition & end_condition)
             .order_by("mol_id")
             .run(self.connection)
         )
@@ -309,6 +325,7 @@ class RethinkDbRepository(Repository):
         return [Result(**item) for item in cursor]
 
     async def create_result(self, result: Result) -> Result:
+        # TODO: return result
         await (
             self.r.db(self.database_name)
             .table("results")
@@ -322,17 +339,15 @@ class RethinkDbRepository(Repository):
         start_mol_id: Optional[int] = None,
         end_mol_id: Optional[int] = None,
     ) -> AsyncIterable[Tuple[Optional[Result], Optional[Result]]]:
-        start_condition = (self.r.row["mol_id"] >= start_mol_id) if start_mol_id is not None else True
+        start_condition = (
+            (self.r.row["mol_id"] >= start_mol_id) if start_mol_id is not None else True
+        )
         end_condition = (self.r.row["mol_id"] <= end_mol_id) if end_mol_id is not None else True
 
         cursor = (
             await self.r.db(self.database_name)
             .table("results")
-            .filter(
-                (self.r.row["job_id"] == job_id)
-                & start_condition
-                & end_condition
-            )
+            .filter((self.r.row["job_id"] == job_id) & start_condition & end_condition)
             .changes(include_initial=False)
             .run(self.connection)
         )

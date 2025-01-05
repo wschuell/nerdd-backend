@@ -37,6 +37,8 @@ class SaveModuleToDb(Action[ModuleMessage]):
             await self._repository.create_module(module)
         except RecordAlreadyExistsError:
             logger.info(f"Module with id {module.id} already exists in the database")
+            logger.info("Updating existing module")
+            await self._repository.update_module(module)
 
     def _get_group_name(self):
         return "save-module-to-db"
