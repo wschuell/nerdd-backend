@@ -2,7 +2,7 @@ import logging
 
 from nerdd_link import Action, Channel, ResultMessage
 
-from ..data import Repository
+from ..data import RecordNotFoundError, Repository
 from ..models import JobUpdate, Result
 
 __all__ = ["SaveResultToDb"]
@@ -18,7 +18,15 @@ class SaveResultToDb(Action[ResultMessage]):
     async def _process_message(self, message: ResultMessage) -> None:
         job_id = message.job_id
 
+        try:
+            job = await self.repository.get_job_by_id(job_id)
+        except RecordNotFoundError:
+            logger.error(f"Job with id {job_id} not found")
+            return
+
         # TODO: check if corresponding module has correct task type (e.g. "derivative_prediction")
+
+        # generate an id for the result
         try:
             if hasattr(message, "atom_id"):
                 id = f"{job_id}-{message.mol_id}-{message.atom_id}"
