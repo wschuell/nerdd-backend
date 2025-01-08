@@ -28,16 +28,25 @@ async def augment_job(job: JobInternal, request: Request) -> JobPublic:
     else:
         num_pages_total = None
 
+    # get protocol
+    if request.url.hostname == "localhost":
+        prefix_path = f"http://{request.url.netloc}"
+    else:  # scheme is "wss" or "https"
+        prefix_path = f"https://{request.url.netloc}/api"
+
     # get output files
     output_files = [
-        OutputFile(format=format, url=f"{request.base_url}jobs/{job.id}/output.{format}")
+        OutputFile(
+            format=format,
+            url=f"{prefix_path}/jobs/{job.id}/output.{format}",
+        )
         for format in job.output_formats
     ]
 
     return JobPublic(
         **job.model_dump(),
-        job_url=f"{request.base_url}jobs/{job.id}",
-        results_url=f"{request.base_url}jobs/{job.id}/results",
+        job_url=f"{request.url.netloc}/jobs/{job.id}",
+        results_url=f"{request.url.netloc}/jobs/{job.id}/results",
         num_pages_processed=num_pages_processed,
         num_pages_total=num_pages_total,
         page_size=page_size,
