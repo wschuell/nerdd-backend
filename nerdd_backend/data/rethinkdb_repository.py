@@ -132,7 +132,7 @@ class RethinkDbRepository(Repository):
         if result["skipped"] == 1:
             raise RecordNotFoundError(Module, module.id)
 
-        return Module(**result["changes"][0]["new_val"])
+        return module
 
     #
     # JOBS
@@ -143,7 +143,7 @@ class RethinkDbRepository(Repository):
         cursor = (
             await self.r.db(self.database_name)
             .table("jobs")
-            .filter(self.r.row["job_id"] == job_id)
+            .get(job_id)
             .changes(include_initial=False)
             .run(self.connection)
         )
@@ -185,6 +185,8 @@ class RethinkDbRepository(Repository):
         update_set = {}
         if job.status is not None:
             update_set["status"] = job.status
+        if job.num_entries_processed is not None:
+            update_set["num_entries_processed"] = job.num_entries_processed
         if job.num_entries_total is not None:
             update_set["num_entries_total"] = job.num_entries_total
         if job.num_checkpoints_total is not None:
@@ -205,6 +207,9 @@ class RethinkDbRepository(Repository):
             .update(update_set, return_changes=True)
             .run(self.connection)
         )
+
+        if changes["unchanged"] == 1:
+            return await self.get_job_by_id(job.id)
 
         if len(changes["changes"]) == 0:
             raise RecordNotFoundError(Job, job.id)
@@ -348,17 +353,17 @@ class RethinkDbRepository(Repository):
             await self.r.db(self.database_name)
             .table("results")
             .filter((self.r.row["job_id"] == job_id) & start_condition & end_condition)
-            .changes(include_initial=False)
+            .changes(include_initial=True)
             .run(self.connection)
         )
 
         async for change in cursor:
-            if change["old_val"] is None:
+            if "old_val" not in change or change["old_val"] is None:
                 old_result = None
             else:
                 old_result = Result(**change["old_val"])
 
-            if change["new_val"] is None:
+            if "new_val" not in change or change["new_val"] is None:
                 new_result = None
             else:
                 new_result = Result(**change["new_val"])

@@ -94,20 +94,22 @@ async def put_multiple_sources(
     # create source from inputs list
     if len(inputs) > 0:
 
-        async def _put_input(input: str):
+        async def _put_input(index: int, input: str):
             file_stream = BytesIO(input.encode("utf-8"))
-            file = UploadFile(file_stream)
+            file = UploadFile(file_stream, filename=f"user_input_{index}")
             return await put_source(file=file, request=request)
 
-        sources_from_inputs = await asyncio.gather(*[_put_input(input) for input in inputs])
+        sources_from_inputs = await asyncio.gather(
+            *[_put_input(i, input) for i, input in enumerate(inputs)]
+        )
         all_sources += sources_from_inputs
 
     for source_id in sources:
         try:
             source = await repository.get_source_by_id(source_id)
             all_sources.append(source)
-        except RecordNotFoundError:
-            raise HTTPException(status_code=404, detail=f"Source {source_id} not found")
+        except RecordNotFoundError as e:
+            raise HTTPException(status_code=404, detail=f"Source {source_id} not found") from e
 
     # create one json file referencing all sources
     sources_from_files = await asyncio.gather(*[put_source(request, file=file) for file in files])
@@ -117,7 +119,7 @@ async def put_multiple_sources(
 
     # create a merged file with all sources
     file_stream = BytesIO(json.dumps(jsonable_encoder(all_sources_objects)).encode("utf-8"))
-    file = UploadFile(file_stream, filename="input.json")
+    file = UploadFile(file_stream, filename=None)
     result_source = await put_source(file=file, format="json", request=request)
 
     return result_source

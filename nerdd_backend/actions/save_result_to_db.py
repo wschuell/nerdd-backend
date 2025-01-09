@@ -1,9 +1,10 @@
+import asyncio
 import logging
 
 from nerdd_link import Action, Channel, ResultMessage
 
-from ..data import Repository
-from ..models import Result
+from ..data import RecordNotFoundError, Repository
+from ..models import JobUpdate, Result
 
 __all__ = ["SaveResultToDb"]
 
@@ -16,17 +17,50 @@ class SaveResultToDb(Action[ResultMessage]):
         self.repository = repository
 
     async def _process_message(self, message: ResultMessage) -> None:
-        # TODO: check if corresponding module has correct task type (e.g. "derivative_prediction")
+        job_id = message.job_id
+
+        # If a job was submitted and deleted during processing, results might still be generated.
+        # In this case, we ignore the results of the deleted job.
         try:
-            if hasattr(message, "atom_id"):
-                id = f"{message.job_id}-{message.mol_id}-{message.atom_id}"
-            elif hasattr(message, "derivative_id"):
-                id = f"{message.job_id}-{message.mol_id}-{message.derivative_id}"
-            else:
-                id = f"{message.job_id}-{message.mol_id}"
-            await self.repository.create_result(Result(id=id, **message.model_dump()))
-        except Exception as e:
-            logger.error(f"Error consuming message: {e}")
+            job = await self.repository.get_job_by_id(job_id)
+        except RecordNotFoundError:
+            logger.error(f"Job with id {job_id} not found. Ignore this result.")
+            return
+
+        # TODO: check if corresponding module has correct task type (e.g. "derivative_prediction")
+
+        # generate an id for the result
+        if hasattr(message, "atom_id"):
+            id = f"{job_id}-{message.mol_id}-{message.atom_id}"
+        elif hasattr(message, "derivative_id"):
+            id = f"{job_id}-{message.mol_id}-{message.derivative_id}"
+        else:
+            id = f"{job_id}-{message.mol_id}"
+
+        # map sources to original file names
+        if hasattr(message, "source") and not isinstance(message.source, str):
+
+            async def _replace_source(source_id, repository):
+                try:
+                    source = await repository.get_source_by_id(source_id)
+                except RecordNotFoundError:
+                    return source_id
+                return source.filename
+
+            translated_sources = await asyncio.gather(
+                *(_replace_source(source_id, self.repository) for source_id in message.source)
+            )
+            message.source = [s for s in translated_sources if s is not None]
+
+        # save result
+        await self.repository.create_result(Result(id=id, **message.model_dump()))
+
+        # update job
+        # TODO: there might be a RaceCondition here (no atomic transaction)
+        num_entries_processed = await self.repository.get_num_processed_entries_by_job_id(job_id)
+        await self.repository.update_job(
+            JobUpdate(id=job_id, num_entries_processed=num_entries_processed)
+        )
 
     def _get_group_name(self):
         return "save-result-to-db"
