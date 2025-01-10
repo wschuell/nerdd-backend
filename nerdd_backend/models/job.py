@@ -17,9 +17,10 @@ class Job(BaseModel):
     source_id: str
     params: dict
     created_at: datetime = datetime.now(timezone.utc)
-    status: str
     num_entries_processed: int = 0
     num_entries_total: Optional[int] = None
+    page_size: int = 10
+    status: str
 
 
 class JobInternal(Job):
@@ -37,7 +38,6 @@ class JobCreate(BaseModel):
 class JobPublic(Job):
     num_pages_total: Optional[int]
     num_pages_processed: int
-    page_size: int
     output_files: List[OutputFile]
     job_url: str
     results_url: str

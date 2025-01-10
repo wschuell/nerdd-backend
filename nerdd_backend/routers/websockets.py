@@ -31,14 +31,15 @@ async def get_job_ws(websocket: WebSocket, job_id: str):
 async def get_results_ws(websocket: WebSocket, job_id: str, page: int = Query()):
     app = websocket.app
     repository = app.state.repository
-    page_size = app.state.config.page_size
 
     await websocket.accept()
 
     try:
         job = await repository.get_job_by_id(job_id)
-    except RecordNotFoundError:
-        raise HTTPException(status_code=404, detail="Job not found")
+    except RecordNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Job not found") from e
+
+    page_size = job.page_size
 
     # num_entries might not be available, yet
     # we assume it to be positive infinity in that case
