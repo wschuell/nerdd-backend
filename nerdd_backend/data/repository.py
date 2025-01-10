@@ -59,7 +59,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def update_job(self, job: JobUpdate) -> JobInternal:
+    async def update_job(self, job_update: JobUpdate) -> JobInternal:
         pass
 
     @abstractmethod

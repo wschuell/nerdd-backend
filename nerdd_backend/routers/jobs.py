@@ -7,6 +7,7 @@ from nerdd_link import FileSystem, JobMessage
 
 from ..data import RecordNotFoundError
 from ..models import Job, JobCreate, JobInternal, JobPublic, OutputFile
+from ..util import CompressedSet
 
 __all__ = ["jobs_router"]
 
@@ -14,13 +15,17 @@ jobs_router = APIRouter(prefix="/jobs")
 
 
 async def augment_job(job: JobInternal, request: Request) -> JobPublic:
+    # compute number of processed entries
+    entries_processed = CompressedSet(job.entries_processed)
+    num_entries_processed = entries_processed.count()
+
     # The number of processed pages is only valid if the computation has not finished yet. We adapt
     # this number in the if statement below.
-    num_pages_processed = job.num_entries_processed // job.page_size
+    num_pages_processed = num_entries_processed // job.page_size
     if job.num_entries_total is not None:
         num_pages_total = math.ceil(job.num_entries_total / job.page_size)
 
-        if job.num_entries_total == job.num_entries_processed:
+        if job.num_entries_total == num_entries_processed:
             num_pages_processed = num_pages_total
     else:
         num_pages_total = None
@@ -44,6 +49,7 @@ async def augment_job(job: JobInternal, request: Request) -> JobPublic:
         **job.model_dump(),
         job_url=f"{request.url.netloc}/jobs/{job.id}",
         results_url=f"{request.url.netloc}/jobs/{job.id}/results",
+        num_entries_processed=num_entries_processed,
         num_pages_processed=num_pages_processed,
         num_pages_total=num_pages_total,
         output_files=output_files,

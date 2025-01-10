@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -17,10 +17,10 @@ class Job(BaseModel):
     source_id: str
     params: dict
     created_at: datetime = datetime.now(timezone.utc)
-    num_entries_processed: int = 0
-    num_entries_total: Optional[int] = None
     page_size: int = 10
     status: str
+    entries_processed: List[Tuple[int, int]] = []
+    num_entries_total: Optional[int] = None
 
 
 class JobInternal(Job):
@@ -36,6 +36,7 @@ class JobCreate(BaseModel):
 
 
 class JobPublic(Job):
+    num_entries_processed: int = 0
     num_pages_total: Optional[int]
     num_pages_processed: int
     output_files: List[OutputFile]
@@ -46,7 +47,7 @@ class JobPublic(Job):
 class JobUpdate(BaseModel):
     id: str
     status: Optional[str] = None
-    num_entries_processed: Optional[int] = None
+    entries_processed: Optional[List[int]] = None
     num_entries_total: Optional[int] = None
     num_checkpoints_total: Optional[int] = None
     # checkpoint list update

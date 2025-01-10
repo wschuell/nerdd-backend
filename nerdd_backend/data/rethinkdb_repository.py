@@ -6,6 +6,7 @@ from rethinkdb import RethinkDB
 from rethinkdb.errors import ReqlOpFailedError
 
 from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
+from ..util import CompressedSet
 from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
 
@@ -181,38 +182,41 @@ class RethinkDbRepository(Repository):
         )
         return JobInternal(**result["changes"][0]["new_val"])
 
-    async def update_job(self, job: JobUpdate) -> JobInternal:
-        update_set = {}
-        if job.status is not None:
-            update_set["status"] = job.status
-        if job.num_entries_processed is not None:
-            update_set["num_entries_processed"] = job.num_entries_processed
-        if job.num_entries_total is not None:
-            update_set["num_entries_total"] = job.num_entries_total
-        if job.num_checkpoints_total is not None:
-            update_set["num_checkpoints_total"] = job.num_checkpoints_total
-        if job.new_checkpoints_processed is not None:
-            update_set["checkpoints_processed"] = self.r.row["checkpoints_processed"].union(
-                job.new_checkpoints_processed
+    async def update_job(self, job_update: JobUpdate) -> JobInternal:
+        old_job = await self.get_job_by_id(job_update.id)
+
+        new_job = old_job.model_dump()
+        if job_update.status is not None:
+            new_job["status"] = job_update.status
+        if job_update.entries_processed is not None:
+            entries_processed = CompressedSet(old_job.entries_processed)
+            for entry in job_update.entries_processed:
+                entries_processed.add(entry)
+            new_job["entries_processed"] = entries_processed.to_intervals()
+        if job_update.num_entries_total is not None:
+            new_job["num_entries_total"] = job_update.num_entries_total
+        if job_update.num_checkpoints_total is not None:
+            new_job["num_checkpoints_total"] = job_update.num_checkpoints_total
+        if job_update.new_checkpoints_processed is not None:
+            new_job["checkpoints_processed"] = (
+                old_job.checkpoints_processed + job_update.new_checkpoints_processed
             )
-        if job.new_output_formats is not None:
-            update_set["output_formats"] = self.r.row["output_formats"].union(
-                job.new_output_formats
-            )
+        if job_update.new_output_formats is not None:
+            new_job["output_formats"] = old_job.output_formats + job_update.new_output_formats
 
         changes = (
             await self.r.db(self.database_name)
             .table("jobs")
-            .get(job.id)
-            .update(update_set, return_changes=True)
+            .get(job_update.id)
+            .replace(new_job, return_changes=True)
             .run(self.connection)
         )
 
         if changes["unchanged"] == 1:
-            return await self.get_job_by_id(job.id)
+            return old_job
 
         if len(changes["changes"]) == 0:
-            raise RecordNotFoundError(Job, job.id)
+            raise RecordNotFoundError(Job, job_update.id)
 
         return JobInternal(**changes["changes"][0]["new_val"])
 

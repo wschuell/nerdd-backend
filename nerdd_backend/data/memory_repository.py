@@ -4,6 +4,7 @@ from typing import AsyncIterable, List, Optional, Tuple
 from nerdd_link.utils import ObservableList
 
 from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
+from ..util import CompressedSet
 from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
 
@@ -78,24 +79,27 @@ class MemoryRepository(Repository):
                 self.jobs.append(result)
                 return result
 
-    async def update_job(self, job: JobUpdate) -> JobInternal:
+    async def update_job(self, job_update: JobUpdate) -> JobInternal:
         async with self.transaction_lock:
-            existing_job = await self.get_job_by_id(job.id)
+            existing_job = await self.get_job_by_id(job_update.id)
             modified_job = JobInternal(**existing_job.model_dump())
-            if job.status is not None:
-                modified_job.status = job.status
-            if job.num_entries_processed is not None:
-                modified_job.num_entries_processed = job.num_entries_processed
-            if job.num_entries_total is not None:
-                modified_job.num_entries_total = job.num_entries_total
-            if job.num_checkpoints_total is not None:
-                modified_job.num_checkpoints_total = job.num_checkpoints_total
-            if job.new_checkpoints_processed is not None:
-                modified_job.checkpoints_processed.extend(job.new_checkpoints_processed)
-            if job.new_output_formats is not None:
-                modified_job.output_formats.extend(job.new_output_formats)
+            if job_update.status is not None:
+                modified_job.status = job_update.status
+            if job_update.entries_processed is not None:
+                entries_processed = CompressedSet(modified_job.entries_processed)
+                for entry in job_update.entries_processed:
+                    entries_processed.add(entry)
+                modified_job.entries_processed = entries_processed.to_intervals()
+            if job_update.num_entries_total is not None:
+                modified_job.num_entries_total = job_update.num_entries_total
+            if job_update.num_checkpoints_total is not None:
+                modified_job.num_checkpoints_total = job_update.num_checkpoints_total
+            if job_update.new_checkpoints_processed is not None:
+                modified_job.checkpoints_processed.extend(job_update.new_checkpoints_processed)
+            if job_update.new_output_formats is not None:
+                modified_job.output_formats.extend(job_update.new_output_formats)
             self.jobs.update(existing_job, modified_job)
-            return await self.get_job_by_id(job.id)
+            return await self.get_job_by_id(job_update.id)
 
     async def get_job_by_id(self, id: str) -> JobInternal:
         try:
