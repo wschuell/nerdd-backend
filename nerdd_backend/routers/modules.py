@@ -18,6 +18,7 @@ async def get_modules(request: Request):
     return [
         ModuleShort(**module.model_dump(), module_url=f"{request.base_url}{module.id}")
         for module in modules
+        if module.visible
     ]
 
 
@@ -28,7 +29,7 @@ async def get_module(module_id: str, request: Request):
 
     try:
         module = await repository.get_module_by_id(module_id)
-    except RecordNotFoundError:
-        raise HTTPException(status_code=404, detail="Module not found")
+    except RecordNotFoundError as e:
+        raise HTTPException(status_code=404, detail="Module not found") from e
 
     return ModulePublic(**module.model_dump(), module_url=request.url.path)

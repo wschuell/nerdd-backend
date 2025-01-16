@@ -46,7 +46,8 @@ def get_dynamic_router(module: Module):
 
     # all methods will be available at /module_name e.g. /cypstrate
     # the parameter tags creates a separate group in the swagger ui
-    router = APIRouter(tags=[module.id])
+    # module will be hidden if visible is set to False
+    router = APIRouter(tags=[module.id], include_in_schema=module.visible)
 
     #
     # GET /jobs
