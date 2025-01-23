@@ -7,6 +7,7 @@ from nerdd_link import FileSystem, JobMessage
 
 from ..data import RecordNotFoundError
 from ..models import Job, JobCreate, JobInternal, JobPublic, OutputFile
+from ..util import CompressedSet
 
 __all__ = ["jobs_router"]
 
@@ -14,16 +15,17 @@ jobs_router = APIRouter(prefix="/jobs")
 
 
 async def augment_job(job: JobInternal, request: Request) -> JobPublic:
-    app = request.app
-    page_size = app.state.config.page_size
+    # compute number of processed entries
+    entries_processed = CompressedSet(job.entries_processed)
+    num_entries_processed = entries_processed.count()
 
     # The number of processed pages is only valid if the computation has not finished yet. We adapt
     # this number in the if statement below.
-    num_pages_processed = job.num_entries_processed // page_size
+    num_pages_processed = num_entries_processed // job.page_size
     if job.num_entries_total is not None:
-        num_pages_total = math.ceil(job.num_entries_total / page_size)
+        num_pages_total = math.ceil(job.num_entries_total / job.page_size)
 
-        if job.num_entries_total == job.num_entries_processed:
+        if job.num_entries_total == num_entries_processed:
             num_pages_processed = num_pages_total
     else:
         num_pages_total = None
@@ -47,9 +49,9 @@ async def augment_job(job: JobInternal, request: Request) -> JobPublic:
         **job.model_dump(),
         job_url=f"{request.url.netloc}/jobs/{job.id}",
         results_url=f"{request.url.netloc}/jobs/{job.id}/results",
+        num_entries_processed=num_entries_processed,
         num_pages_processed=num_pages_processed,
         num_pages_total=num_pages_total,
-        page_size=page_size,
         output_files=output_files,
     )
 
@@ -65,7 +67,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
 
     # check if module exists
     try:
-        await repository.get_module_by_id(job.job_type)
+        module = await repository.get_module_by_id(job.job_type)
     except RecordNotFoundError as e:
         all_modules = await repository.get_all_modules()
         valid_options = [module.id for module in all_modules]
@@ -76,6 +78,16 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
                 f"Valid options are: {', '.join(valid_options)}"
             ),
         ) from e
+
+    # get page size (depending on module task)
+    task = module.task
+    if task == "atom_property_prediction":
+        page_size = app.state.config.page_size_atom_property_prediction
+    elif task == "derivative_property_prediction":
+        page_size = app.state.config.page_size_derivative_property_prediction
+    else:
+        # task == "molecular_property_prediction" or unknown task
+        page_size = app.state.config.page_size_molecular_property_prediction
 
     # check if source exists
     try:
@@ -88,6 +100,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
         job_type=job.job_type,
         source_id=job.source_id,
         params=job.params,
+        page_size=page_size,
         status="created",
     )
 

@@ -5,7 +5,9 @@ defaults:
 host: localhost
 port: 8000
 
-page_size: 5
+page_size_molecular_property_prediction: 5
+page_size_atom_property_prediction: 3
+page_size_derivative_property_prediction: 2
 media_root: ./media
 
 mock_infra: true

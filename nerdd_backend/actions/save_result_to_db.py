@@ -24,7 +24,7 @@ class SaveResultToDb(Action[ResultMessage]):
         try:
             job = await self.repository.get_job_by_id(job_id)
         except RecordNotFoundError:
-            logger.error(f"Job with id {job_id} not found. Ignore this result.")
+            logger.error(f"Job with id {job_id} not found. Ignoring this result.")
             return
 
         # TODO: check if corresponding module has correct task type (e.g. "derivative_prediction")
@@ -55,11 +55,9 @@ class SaveResultToDb(Action[ResultMessage]):
         # save result
         await self.repository.create_result(Result(id=id, **message.model_dump()))
 
-        # update job
-        # TODO: there might be a RaceCondition here (no atomic transaction)
-        num_entries_processed = await self.repository.get_num_processed_entries_by_job_id(job_id)
+        # update set of processed entries in job
         await self.repository.update_job(
-            JobUpdate(id=job_id, num_entries_processed=num_entries_processed)
+            JobUpdate(id=job_id, entries_processed=[message.mol_id])
         )
 
     def _get_group_name(self):

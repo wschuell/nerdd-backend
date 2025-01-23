@@ -6,6 +6,7 @@ import hydra
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from nerdd_link import FileSystem, KafkaChannel, MemoryChannel, SystemMessage
 from nerdd_link.utils import async_to_sync
 from omegaconf import DictConfig, OmegaConf
@@ -156,6 +157,8 @@ async def create_app(cfg: DictConfig):
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+    app.add_middleware(GZipMiddleware)
 
     app.include_router(jobs_router)
     app.include_router(sources_router)

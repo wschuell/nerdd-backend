@@ -15,7 +15,6 @@ async def get_results(
 ) -> ResultSet:
     app = request.app
     repository: Repository = app.state.repository
-    page_size = app.state.config.page_size
 
     page_zero_based = page - 1
 
@@ -23,6 +22,8 @@ async def get_results(
         job = await repository.get_job_by_id(job_id)
     except RecordNotFoundError as e:
         raise HTTPException(status_code=404, detail="Job not found") from e
+
+    page_size = job.page_size
 
     # num_entries might not be available, yet
     # we assume it to be positive infinity in that case
