@@ -1,5 +1,6 @@
 import hashlib
 import json
+import logging
 from typing import Any, AsyncIterable, Dict, List, Optional, Tuple
 
 from rethinkdb import RethinkDB
@@ -11,6 +12,8 @@ from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
 
 __all__ = ["RethinkDbRepository"]
+
+logger = logging.getLogger(__name__)
 
 
 def hash_object(obj: Dict[str, Any]) -> str:
@@ -36,14 +39,35 @@ class RethinkDbRepository(Repository):
         # create database
         try:
             await self.r.db_create(self.database_name).run(self.connection)
-        except ReqlOpFailedError:
-            pass
+        except ReqlOpFailedError as e:
+            if not str(e).startswith("Database `nerdd` already exists"):
+                logger.exception("Failed to create database", exc_info=e)
 
         # create tables
         await self.create_module_table()
         await self.create_sources_table()
         await self.create_jobs_table()
         await self.create_results_table()
+
+        # create an index on job_id in results table
+        try:
+            await (
+                self.r.db(self.database_name)
+                .table("results")
+                .index_create("job_id")
+                .run(self.connection)
+            )
+
+            # wait for index to be ready
+            await (
+                self.r.db(self.database_name)
+                .table("results")
+                .index_wait("job_id")
+                .run(self.connection)
+            )
+        except ReqlOpFailedError as e:
+            if not str(e).startswith("Index `job_id` already exists"):
+                logger.exception("Failed to create index", exc_info=e)
 
     #
     # MODULES
@@ -293,7 +317,7 @@ class RethinkDbRepository(Repository):
         cursor = (
             await self.r.db(self.database_name)
             .table("results")
-            .filter(self.r.row["job_id"] == job_id)
+            .get_all(job_id, index="job_id")
             .run(self.connection)
         )
         return [Result(**item) async for item in cursor]
@@ -302,7 +326,7 @@ class RethinkDbRepository(Repository):
         return (
             await self.r.db(self.database_name)
             .table("results")
-            .filter(self.r.row["job_id"] == job_id)
+            .get_all(job_id, index="job_id")
             .pluck("mol_id")
             .distinct()
             .count()
@@ -323,7 +347,8 @@ class RethinkDbRepository(Repository):
         cursor = (
             await self.r.db(self.database_name)
             .table("results")
-            .filter((self.r.row["job_id"] == job_id) & start_condition & end_condition)
+            .get_all(job_id, index="job_id")
+            .filter(start_condition & end_condition)
             .order_by("mol_id")
             .run(self.connection)
         )
@@ -356,7 +381,8 @@ class RethinkDbRepository(Repository):
         cursor = (
             await self.r.db(self.database_name)
             .table("results")
-            .filter((self.r.row["job_id"] == job_id) & start_condition & end_condition)
+            .get_all(job_id, index="job_id")
+            .filter(start_condition & end_condition)
             .changes(include_initial=True)
             .run(self.connection)
         )

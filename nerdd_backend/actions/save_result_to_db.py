@@ -56,9 +56,7 @@ class SaveResultToDb(Action[ResultMessage]):
         await self.repository.create_result(Result(id=id, **message.model_dump()))
 
         # update set of processed entries in job
-        await self.repository.update_job(
-            JobUpdate(id=job_id, entries_processed=[message.mol_id])
-        )
+        await self.repository.update_job(JobUpdate(id=job_id, entries_processed=[message.mol_id]))
 
     def _get_group_name(self):
         return "save-result-to-db"
