@@ -3,6 +3,5 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.9  # python driver of rethinkdb not compatible with 3.10 yet
+  - python=3.9 # python driver of rethinkdb not compatible with 3.10 yet
   - rdkit=2024
-  - pip=24.3.1
