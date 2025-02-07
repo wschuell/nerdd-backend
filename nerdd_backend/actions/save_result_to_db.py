@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections import OrderedDict
 
 from nerdd_link import Action, Channel, ResultMessage
 
@@ -9,6 +10,36 @@ from ..models import JobUpdate, Result
 __all__ = ["SaveResultToDb"]
 
 logger = logging.getLogger(__name__)
+
+
+# function that caches sources in memory
+cache = OrderedDict()
+max_cache_size = 1000
+
+
+async def get_source_by_id(source_id, repository):
+    if source_id in cache:
+        # make source_id the most recently used
+        cache.move_to_end(source_id)
+        # return the cached value
+        return cache[source_id]
+
+    # if the source is not in the cache, get it from the database
+    try:
+        source = await repository.get_source_by_id(source_id)
+        filename = source.filename
+    except RecordNotFoundError:
+        filename = source_id
+
+    # if the cache is full, remove the least recently used source
+    if len(cache) >= max_cache_size:
+        cache.popitem(last=False)
+
+    # add the new source to the cache and make it the most recently used
+    cache[source_id] = filename
+    cache.move_to_end(source_id)
+
+    return filename
 
 
 class SaveResultToDb(Action[ResultMessage]):
@@ -39,16 +70,8 @@ class SaveResultToDb(Action[ResultMessage]):
 
         # map sources to original file names
         if hasattr(message, "source") and not isinstance(message.source, str):
-
-            async def _replace_source(source_id, repository):
-                try:
-                    source = await repository.get_source_by_id(source_id)
-                except RecordNotFoundError:
-                    return source_id
-                return source.filename
-
             translated_sources = await asyncio.gather(
-                *(_replace_source(source_id, self.repository) for source_id in message.source)
+                *(get_source_by_id(source_id, self.repository) for source_id in message.source)
             )
             message.source = [s for s in translated_sources if s is not None]
 
