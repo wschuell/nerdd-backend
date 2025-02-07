@@ -1,7 +1,7 @@
 FROM mambaorg/micromamba:2.0.5-alpine3.20
 
 # necessary to display the image on Github
-LABEL org.opencontainers.image.source="https://github.com/shirte/nerdd"
+LABEL org.opencontainers.image.source="https://github.com/molinfo-vienna/nerdd-backend"
 
 # Necessary, so Docker doesn't buffer the output and that we can see the output 
 # of the application in real-time.
