@@ -29,4 +29,8 @@ python -m nerdd_backend.main --config-name development ++media_root=./data
 python -m nerdd_backend.main --config-name production \
   ++db.host=localhost ++db.port=31562 \
   ++channel.broker=localhost:31624
+
+# use localhost:8000 for api requests
+# (see all endpoints on http://localhost:8000/docs)
+curl localhost:8000/modules
 ```
