@@ -15,6 +15,12 @@ conda env create -f environment.yml
 # install package in development mode
 pip install -e .[test]
 
+# run tests
+pytest
+
+# run tests with automatic reload on code changes
+ptw
+
 # run with a toy communication channel, database backend and a basic computational module (quickstart)
 python -m nerdd_backend.main --config-name development
 
