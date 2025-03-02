@@ -11,5 +11,4 @@ omegaconf==2.3.0
 pydantic==2.11.0
 python-multipart==0.0.20
 rethinkdb==2.4.10.post1
-uvicorn==0.23.2
-websockets==15.0.1
+uvicorn[standard]==0.23.2
