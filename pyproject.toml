@@ -26,11 +26,6 @@ dependencies = [
     "uvicorn[standard]~=0.23.2",
     "aiokafka~=0.12.0",
     "rethinkdb~=2.4.9",
-    "stringcase~=1.2.0",
-    "markdown~=3.4.3",
-    "Pillow~=10.0.0",
-    "xmltodict~=0.13.0",
-    "munch~=4.0.0",
     "python-multipart~=0.0.6",
     "aiofiles~=23.2.1",
     # looseversion is necessary for rethinkdb:
