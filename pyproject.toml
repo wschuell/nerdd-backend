@@ -20,8 +20,8 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
 ]
 dependencies = [
-    "nerdd-module>=0.1.0",
-    "nerdd-link>=0.2.3",
+    "nerdd-module>=0.3.34",
+    "nerdd-link>=0.2.19",
     "fastapi~=0.103.2",
     "uvicorn[standard]~=0.23.2",
     "aiokafka~=0.12.0",
