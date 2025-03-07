@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from asyncio import Lock
 from collections import OrderedDict
 
@@ -62,25 +63,40 @@ class SaveResultToDb(Action[ResultMessage]):
             logger.error(f"Job with id {job_id} not found. Ignoring this result.")
             return
 
+        try:
+            module = await self.repository.get_module_by_id(job.job_type)
+        except RecordNotFoundError:
+            logger.error(f"Module with id {job.job_type} not found. Ignoring this result.")
+            return
+
         # TODO: check if corresponding module has correct task type (e.g. "derivative_prediction")
 
         # generate an id for the result
         if hasattr(message, "atom_id"):
             id = f"{job_id}-{message.mol_id}-{message.atom_id}"
+            record_id = f"{message.mol_id}-{message.atom_id}"
         elif hasattr(message, "derivative_id"):
             id = f"{job_id}-{message.mol_id}-{message.derivative_id}"
+            record_id = f"{message.mol_id}-{message.derivative_id}"
         else:
             id = f"{job_id}-{message.mol_id}"
+            record_id = message.mol_id
 
         # map sources to original file names
         if hasattr(message, "source") and not isinstance(message.source, str):
             translated_sources = await asyncio.gather(
-                *(get_source_by_id(source_id, self.repository) for source_id in message.source)
+                *(self.repository.get_source_by_id(source_id) for source_id in message.source)
             )
-            message.source = [s for s in translated_sources if s is not None]
+            message.source = [s.filename for s in translated_sources if s is not None]
+
+        # replace all file paths with urls
+        result = message.model_dump()
+        for k, v in result.items():
+            if isinstance(v, str) and v.startswith("file://"):
+                result[k] = f"/api/jobs/{job_id}/files/{k}/{record_id}"
 
         # save result
-        await self.repository.create_result(Result(id=id, **message.model_dump()))
+        await self.repository.create_result(Result(id=id, **result))
 
         # update set of processed entries in job
         await self.repository.update_job(JobUpdate(id=job_id, entries_processed=[message.mol_id]))
