@@ -21,6 +21,7 @@ from .actions import (
 from .data import MemoryRepository, RethinkDbRepository
 from .lifespan import ActionLifespan, CreateModuleLifespan
 from .routers import (
+    files_router,
     get_dynamic_router,
     jobs_router,
     modules_router,
@@ -165,6 +166,7 @@ async def create_app(cfg: DictConfig):
     app.include_router(results_router)
     app.include_router(modules_router)
     app.include_router(websockets_router)
+    app.include_router(files_router)
 
     for module in await repository.get_all_modules():
         app.include_router(get_dynamic_router(module))
