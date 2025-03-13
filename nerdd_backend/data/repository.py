@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import AsyncIterable, List, Optional, Tuple
 
-from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
+from ..models import Job, JobInternal, JobUpdate, Module, Result, Source, NerddWarning
 
 __all__ = ["Repository"]
 
@@ -12,6 +12,17 @@ class Repository(ABC):
     #
     @abstractmethod
     async def initialize(self):
+        pass
+
+    #
+    # WARNINGS
+    #
+    @abstractmethod
+    async def get_all_warnings(self) -> List[NerddWarning]:
+        pass
+
+    @abstractmethod
+    async def create_warning(self, warning: NerddWarning) -> NerddWarning:
         pass
 
     #

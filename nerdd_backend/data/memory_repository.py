@@ -3,7 +3,7 @@ from typing import AsyncIterable, List, Optional, Tuple
 
 from nerdd_link.utils import ObservableList
 
-from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
+from ..models import Job, JobInternal, JobUpdate, Module, Result, Source, NerddWarning
 from ..util import CompressedSet
 from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
@@ -21,9 +21,35 @@ class MemoryRepository(Repository):
     async def initialize(self) -> None:
         self.transaction_lock = Lock()
         self.jobs = ObservableList[JobInternal]()
+        self.warnings = ObservableList[NerddWarning]()
         self.modules = ObservableList[Module]()
         self.sources = ObservableList[Source]()
         self.results = ObservableList[Result]()
+
+    #
+    # WARNINGS
+    #
+
+    async def get_all_warnings(self) -> List[NerddWarning]:
+        return self.warnings.get_items()
+
+    async def create_warning(self, warning: NerddWarning) -> NerddWarning:
+        assert warning.id is not None
+        async with self.transaction_lock:
+            try:
+                await self.get_warning_by_id(warning.id)
+                raise RecordAlreadyExistsError(Module, module.id)
+            except RecordNotFoundError:
+                self.warnings.append(warning)
+                return warning
+
+    async def get_warning_by_id(self, id: str) -> NerddWarning:
+        try:
+            return next(
+                (warning for warning in self.warning.get_items() if module.id == id)
+            )
+        except StopIteration as e:
+            raise RecordNotFoundError(NerddWarning, id) from e
 
     #
     # MODULES
@@ -55,7 +81,9 @@ class MemoryRepository(Repository):
 
     async def get_module_by_id(self, id: str) -> Module:
         try:
-            return next((module for module in self.modules.get_items() if module.id == id))
+            return next(
+                (module for module in self.modules.get_items() if module.id == id)
+            )
         except StopIteration as e:
             raise RecordNotFoundError(Module, id) from e
 
@@ -66,7 +94,9 @@ class MemoryRepository(Repository):
         self, job_id: str
     ) -> AsyncIterable[Tuple[Optional[JobInternal], Optional[JobInternal]]]:
         async for old, new in self.jobs.changes():
-            if (old is not None and old.id == job_id) or (new is not None and new.id == job_id):
+            if (old is not None and old.id == job_id) or (
+                new is not None and new.id == job_id
+            ):
                 yield (old, new)
 
     async def create_job(self, job: Job) -> JobInternal:
@@ -95,7 +125,9 @@ class MemoryRepository(Repository):
             if job_update.num_checkpoints_total is not None:
                 modified_job.num_checkpoints_total = job_update.num_checkpoints_total
             if job_update.new_checkpoints_processed is not None:
-                modified_job.checkpoints_processed.extend(job_update.new_checkpoints_processed)
+                modified_job.checkpoints_processed.extend(
+                    job_update.new_checkpoints_processed
+                )
             if job_update.new_output_formats is not None:
                 modified_job.output_formats.extend(job_update.new_output_formats)
             self.jobs.update(existing_job, modified_job)
@@ -126,7 +158,9 @@ class MemoryRepository(Repository):
 
     async def get_source_by_id(self, id: str) -> Source:
         try:
-            return next((source for source in self.sources.get_items() if source.id == id))
+            return next(
+                (source for source in self.sources.get_items() if source.id == id)
+            )
         except StopIteration as e:
             raise RecordNotFoundError(Source, id) from e
 
@@ -159,7 +193,9 @@ class MemoryRepository(Repository):
 
     async def get_result_by_id(self, id: str) -> Result:
         try:
-            return next((result for result in self.results.get_items() if result.id == id))
+            return next(
+                (result for result in self.results.get_items() if result.id == id)
+            )
         except StopIteration as e:
             raise RecordNotFoundError(Result, id) from e
 
@@ -184,7 +220,9 @@ class MemoryRepository(Repository):
                 self.results.append(result)
 
     async def get_all_results_by_job_id(self, job_id: str) -> List[Result]:
-        return [result for result in self.results.get_items() if result.job_id == job_id]
+        return [
+            result for result in self.results.get_items() if result.job_id == job_id
+        ]
 
     async def get_num_processed_entries_by_job_id(self, job_id: str) -> int:
         return len(await self.get_all_results_by_job_id(job_id))

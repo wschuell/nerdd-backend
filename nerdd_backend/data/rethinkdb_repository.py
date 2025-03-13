@@ -47,6 +47,7 @@ class RethinkDbRepository(Repository):
         self.connection.use(self.database_name)
 
         # create tables
+        await self.create_warning_table()
         await self.create_module_table()
         await self.create_sources_table()
         await self.create_jobs_table()
@@ -63,12 +64,41 @@ class RethinkDbRepository(Repository):
                 logger.exception("Failed to create index", exc_info=e)
 
     #
+    # WARNINGS
+    #
+    async def create_warning_table(self) -> None:
+        try:
+            await self.r.table_create("warnings", primary_key="id").run(self.connection)
+        except ReqlOpFailedError:
+            pass
+
+    async def create_warning(self, warning: NerddWarning) -> NerddWarning:
+        result = await (
+            self.r.table("warnings")
+            .insert(warning.model_dump(), conflict="error", return_changes=True)
+            .run(self.connection)
+        )
+
+        if len(result["changes"]) == 0:
+            raise RecordAlreadyExistsError(NerddWarning, warning.id)
+
+        return NerddWarning(**result["changes"][0]["new_val"])
+
+    async def get_all_warnings(self) -> List[NerddWarning]:
+        cursor = await self.r.table("warnings").run(self.connection)
+        return [NerddWarning(**item) async for item in cursor]
+
+    #
     # MODULES
     #
     async def get_module_changes(
         self,
     ) -> AsyncIterable[Tuple[Optional[Module], Optional[Module]]]:
-        cursor = await self.r.table("modules").changes(include_initial=True).run(self.connection)
+        cursor = (
+            await self.r.table("modules")
+            .changes(include_initial=True)
+            .run(self.connection)
+        )
 
         async for change in cursor:
             if "old_val" not in change or change["old_val"] is None:
@@ -191,9 +221,9 @@ class RethinkDbRepository(Repository):
         if job_update.num_checkpoints_total is not None:
             update_set["num_checkpoints_total"] = job_update.num_checkpoints_total
         if job_update.new_checkpoints_processed is not None:
-            update_set["checkpoints_processed"] = self.r.row["checkpoints_processed"].set_union(
-                job_update.new_checkpoints_processed
-            )
+            update_set["checkpoints_processed"] = self.r.row[
+                "checkpoints_processed"
+            ].set_union(job_update.new_checkpoints_processed)
         if job_update.new_output_formats is not None:
             update_set["output_formats"] = self.r.row["output_formats"].set_union(
                 job_update.new_output_formats
@@ -312,7 +342,11 @@ class RethinkDbRepository(Repository):
             pass
 
     async def get_all_results_by_job_id(self, job_id: str) -> List[Result]:
-        cursor = await self.r.table("results").get_all(job_id, index="job_id").run(self.connection)
+        cursor = (
+            await self.r.table("results")
+            .get_all(job_id, index="job_id")
+            .run(self.connection)
+        )
         return [Result(**item) async for item in cursor]
 
     async def get_num_processed_entries_by_job_id(self, job_id: str) -> int:
@@ -334,7 +368,9 @@ class RethinkDbRepository(Repository):
         start_condition = (
             (self.r.row["mol_id"] >= start_mol_id) if start_mol_id is not None else True
         )
-        end_condition = (self.r.row["mol_id"] <= end_mol_id) if end_mol_id is not None else True
+        end_condition = (
+            (self.r.row["mol_id"] <= end_mol_id) if end_mol_id is not None else True
+        )
 
         cursor = (
             await self.r.table("results")
@@ -366,7 +402,9 @@ class RethinkDbRepository(Repository):
         start_condition = (
             (self.r.row["mol_id"] >= start_mol_id) if start_mol_id is not None else True
         )
-        end_condition = (self.r.row["mol_id"] <= end_mol_id) if end_mol_id is not None else True
+        end_condition = (
+            (self.r.row["mol_id"] <= end_mol_id) if end_mol_id is not None else True
+        )
 
         cursor = (
             await self.r.table("results")
