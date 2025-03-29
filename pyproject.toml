@@ -7,13 +7,12 @@ name = "nerdd-backend"
 version = "0.0.1"
 description = "Description of your project"
 authors = [{ name = "Steffen Hirte", email = "steffen.hirte@univie.ac.at" }]
-license = { text = "MIT" }
+license = "BSD-3-Clause"
 readme = "README.md"
 keywords = ["fastapi", "backend", "api"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
