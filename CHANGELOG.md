@@ -1,6 +1,39 @@
 # CHANGELOG
 
 
+## v0.0.2 (2025-03-29)
+
+### Fixes
+
+* fix: Extend dockerignore file ([`7712747`](https://github.com/molinfo-vienna/nerdd-backend/commit/77127479a964d5f661c5a8d75f308e4090ac83af))
+
+* fix: Adapt Dockerfile ([`f2ebf27`](https://github.com/molinfo-vienna/nerdd-backend/commit/f2ebf27689d58bdc3d40c6a5b034b5403bdcfaa6))
+
+* fix: Add requirements.txt ([`26b85a4`](https://github.com/molinfo-vienna/nerdd-backend/commit/26b85a44b46acbc777caeefc93ddcb2e3e366f53))
+
+* fix: Delete contradicting license terms ([`e26ae60`](https://github.com/molinfo-vienna/nerdd-backend/commit/e26ae6099557ddb4399cf166df9bca023d072f3d))
+
+### Unknown
+
+* Merge pull request #24 from shirte/main
+
+Add requirements.txt ([`835e671`](https://github.com/molinfo-vienna/nerdd-backend/commit/835e671eb055ead2f5bdde432228d710294f3939))
+
+* Merge pull request #23 from shirte/main
+
+Add contribution section to readme file ([`0c630f6`](https://github.com/molinfo-vienna/nerdd-backend/commit/0c630f663b4fabbcc154ff08e99bf768af7e36b6))
+
+* Use pytest-watcher instead of pytest-watch ([`988d662`](https://github.com/molinfo-vienna/nerdd-backend/commit/988d662e9d84eca5de184aff6f27d41c42b9b568))
+
+* Add section on unit testing ([`2d4110d`](https://github.com/molinfo-vienna/nerdd-backend/commit/2d4110db77bebb6ff2c49246ae4a6461e70f44eb))
+
+* Add hint on api access in contribution section ([`88fb181`](https://github.com/molinfo-vienna/nerdd-backend/commit/88fb1815abee373a4233615bb7ffa1974a2278b9))
+
+* Add missing dependency in contribution section ([`0687d1b`](https://github.com/molinfo-vienna/nerdd-backend/commit/0687d1bd4a3df33b93fbc8f4ecaed129e5a25363))
+
+* Add contribution section to readme ([`bcd65c9`](https://github.com/molinfo-vienna/nerdd-backend/commit/bcd65c9ecccafafc44dbbb1109ff032ed280b04f))
+
+
 ## v0.0.1 (2025-02-07)
 
 ### Fixes
