@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.0.3 (2025-03-30)
+
+### Fixes
+
+* fix: Bump version of nerdd-module ([`ca76d79`](https://github.com/molinfo-vienna/nerdd-backend/commit/ca76d79dea766deafd29ff319c8d6f00f0aa5eab))
+
+### Unknown
+
+* Merge pull request #25 from shirte/main
+
+fix: Bump version of nerdd-module ([`e4c0a85`](https://github.com/molinfo-vienna/nerdd-backend/commit/e4c0a85bfdd4059e32717c652bc50add338fb38d))
+
+
 ## v0.0.2 (2025-03-29)
 
 ### Fixes
