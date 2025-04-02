@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.0.4 (2025-04-02)
+
+### Fixes
+
+* fix: Use uvicorn[standard] in requirements.txt ([`3043d52`](https://github.com/molinfo-vienna/nerdd-backend/commit/3043d5210c5dd65818da42770cac0501dff5f266))
+
+* fix: Bump version of nerdd-module in pyproject.toml ([`fd298a7`](https://github.com/molinfo-vienna/nerdd-backend/commit/fd298a7e9b6b3d30d7c0211e96b20e16be719b51))
+
+### Unknown
+
+* Merge pull request #26 from shirte/main
+
+Use uvicorn[standard] in requirements.txt ([`0b4e592`](https://github.com/molinfo-vienna/nerdd-backend/commit/0b4e5928258a369004e8d5abf7e0aa25b4b01a0e))
+
+* Remove unnecessary dependencies ([`b9dec2d`](https://github.com/molinfo-vienna/nerdd-backend/commit/b9dec2d9c58ec1d1babc03a6b23123af5488ca92))
+
+
 ## v0.0.3 (2025-03-30)
 
 ### Fixes
