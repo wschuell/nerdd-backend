@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.0.5 (2025-04-12)
+
+### Fixes
+
+* fix: Remove looseversion dependency (since rethinkdb fixed that) ([`de42294`](https://github.com/molinfo-vienna/nerdd-backend/commit/de42294139acb34fd818be5d51ddb41be07f7436))
+
+* fix: Update Python to 3.12 ([`4ccfe99`](https://github.com/molinfo-vienna/nerdd-backend/commit/4ccfe994470080c35ad791126f4efff77c5affc7))
+
+* fix: Update rethinkdb dependency ([`2c409a6`](https://github.com/molinfo-vienna/nerdd-backend/commit/2c409a6f9e4edc14183634b17e8338061ac3fc37))
+
+### Unknown
+
+* Merge pull request #27 from shirte/main
+
+Update rethinkdb dependency ([`03b96a6`](https://github.com/molinfo-vienna/nerdd-backend/commit/03b96a6049e5545fdb693ddba9b6690e7f52e6c2))
+
+
 ## v0.0.4 (2025-04-02)
 
 ### Fixes
