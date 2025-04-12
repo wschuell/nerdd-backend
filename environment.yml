@@ -2,5 +2,5 @@ name: nerdd_backend
 channels:
   - conda-forge
 dependencies:
-  - python=3.9 # python driver of rethinkdb not compatible with 3.10 yet
+  - python=3.12
   - rdkit=2024
