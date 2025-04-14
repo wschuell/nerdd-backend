@@ -128,7 +128,7 @@ async def create_app(cfg: DictConfig):
         except asyncio.CancelledError:
             logger.info("Tasks successfully cancelled")
 
-    app = FastAPI(lifespan=global_lifespan)
+    app = FastAPI(lifespan=global_lifespan, root_path="/api")
     app.state.repository = repository = get_repository(cfg)
     app.state.channel = channel = get_channel(cfg)
     app.state.filesystem = FileSystem(cfg.media_root)
@@ -180,7 +180,17 @@ async def main(cfg: DictConfig) -> None:
     logger.info(f"Starting server with the following configuration:\n{OmegaConf.to_yaml(cfg)}")
     app = await create_app(cfg)
 
-    config = uvicorn.Config(app, host=cfg.host, port=cfg.port, log_level="info")
+    config = uvicorn.Config(
+        app,
+        host=cfg.host,
+        port=cfg.port,
+        log_level="info",
+        # Use the url (protocol, host) provided in the X-Forwarded-* headers. This is important,
+        # because nerdd-backend runs behind a reverse proxy (traefik) and the normal request
+        # headers (host, port, protocol) do not contain the correct values.
+        proxy_headers=True,
+        forwarded_allow_ips="*",
+    )
     server = uvicorn.Server(config)
     await server.serve()
 
