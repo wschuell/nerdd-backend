@@ -30,25 +30,19 @@ async def augment_job(job: JobInternal, request: Request) -> JobPublic:
     else:
         num_pages_total = None
 
-    # get protocol
-    if request.url.hostname == "localhost":
-        prefix_path = f"http://{request.url.netloc}"
-    else:  # scheme is "wss" or "https"
-        prefix_path = f"https://{request.url.netloc}/api"
-
     # get output files
     output_files = [
         OutputFile(
-            format=format,
-            url=f"{prefix_path}/jobs/{job.id}/output.{format}",
+            format=output_format,
+            url=str(request.url_for("get_output_file", job_id=job.id, format=output_format)),
         )
-        for format in job.output_formats
+        for output_format in job.output_formats
     ]
 
     return JobPublic(
         **job.model_dump(),
-        job_url=f"{request.url.netloc}/jobs/{job.id}",
-        results_url=f"{request.url.netloc}/jobs/{job.id}/results",
+        job_url=str(request.url_for("get_job", job_id=job.id)),
+        results_url=str(request.url_for("get_results", job_id=job.id)),
         num_entries_processed=num_entries_processed,
         num_pages_processed=num_pages_processed,
         num_pages_total=num_pages_total,
@@ -74,8 +68,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
         raise HTTPException(
             status_code=404,
             detail=(
-                f"Module {job.job_type} not found. "
-                f"Valid options are: {', '.join(valid_options)}"
+                f"Module {job.job_type} not found. Valid options are: {', '.join(valid_options)}"
             ),
         ) from e
 
