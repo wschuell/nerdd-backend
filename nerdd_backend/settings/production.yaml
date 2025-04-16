@@ -4,6 +4,7 @@ defaults:
 
 host: 0.0.0.0
 port: 8000
+root_path: /api
 
 page_size_molecular_property_prediction: 100
 page_size_atom_property_prediction: 10
