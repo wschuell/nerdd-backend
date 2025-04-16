@@ -85,7 +85,7 @@ class SaveResultToDb(Action[ResultMessage]):
         # map sources to original file names
         if hasattr(message, "source") and not isinstance(message.source, str):
             translated_sources = await asyncio.gather(
-                *(self.repository.get_source_by_id(source_id) for source_id in message.source)
+                *(get_source_by_id(source_id, self.repository) for source_id in message.source)
             )
             message.source = [s.filename for s in translated_sources if s is not None]
 
