@@ -1,8 +1,8 @@
 import json
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, UploadFile
+from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
 from pydantic import create_model, model_validator
 
 from ..models import JobCreate, Module
@@ -83,7 +83,7 @@ def get_dynamic_router(module: Module):
                 detail="job_type was specified, but it does not match the module name",
             )
 
-        if len(inputs) == 0 and len(sources) == 0:
+        if len(inputs) == 0 and len(sources) == 0 and len(files) == 0:
             raise HTTPException(
                 status_code=400,
                 detail="At least one input or source must be provided",
@@ -115,20 +115,22 @@ def get_dynamic_router(module: Module):
             sources = []
         return await _create_job(inputs, sources, [], params.model_dump(), request)
 
-    router.get(f"/{module.id}" "/jobs/", include_in_schema=False)(create_simple_job)
-    router.get(f"/{module.id}" "/jobs")(create_simple_job)
+    router.get(f"/{module.id}/jobs/", include_in_schema=False)(create_simple_job)
+    router.get(f"/{module.id}/jobs")(create_simple_job)
 
     #
     # POST /jobs
     #
     async def create_complex_job(
-        files: Union[List[UploadFile], UploadFile, str] = "",
+        files: List[UploadFile] = File(
+            default=[],
+            description='Files to upload. Uncheck "Send empty value" if sending from Swagger UI.',
+        ),
         job: QueryModelPost = Body(),
         request: Request = None,
     ):
-        # Some clients like to leave files empty and FastAPI will return an
-        # empty string instead of an empty list. We need to handle this case.
-        if isinstance(files, str):
+        # files can be None if no files are uploaded (even though the type suggests otherwise)
+        if files is None:
             files = []
 
         return await _create_job(
@@ -139,34 +141,34 @@ def get_dynamic_router(module: Module):
             request,
         )
 
-    router.post(f"/{module.id}" "/jobs/", include_in_schema=False)(create_complex_job)
-    router.post(f"/{module.id}" "/jobs")(create_complex_job)
+    router.post(f"/{module.id}/jobs/", include_in_schema=False)(create_complex_job)
+    router.post(f"/{module.id}/jobs")(create_complex_job)
 
     #
     # GET /jobs/{job_id}
     #
-    router.get(f"/{module.id}" "/jobs/{job_id}/", include_in_schema=False)(get_job)
-    router.get(f"/{module.id}" "/jobs/{job_id}")(get_job)
+    router.get(f"/{module.id}/jobs/{{job_id}}/", include_in_schema=False)(get_job)
+    router.get(f"/{module.id}/jobs/{{job_id}}")(get_job)
 
     #
     # DELETE /jobs/{job_id}
     #
-    router.delete(f"/{module.id}" "/jobs/{job_id}/", include_in_schema=False)(delete_job)
-    router.delete(f"/{module.id}" "/jobs/{job_id}")(delete_job)
+    router.delete(f"/{module.id}/jobs/{{job_id}}/", include_in_schema=False)(delete_job)
+    router.delete(f"/{module.id}/jobs/{{job_id}}")(delete_job)
 
     #
     # GET /jobs/{job_id}/results/{page}
     #
-    router.get(f"/{module.id}" "/jobs/{job_id}/results/", include_in_schema=False)(get_results)
-    router.get(f"/{module.id}" "/jobs/{job_id}/results")(get_results)
+    router.get(f"/{module.id}/jobs/{{job_id}}/results/", include_in_schema=False)(get_results)
+    router.get(f"/{module.id}/jobs/{{job_id}}/results")(get_results)
 
     #
     # websocket endpoints
     #
-    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}")(get_job_ws)
-    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}/")(get_job_ws)
+    router.websocket(f"/websocket/{module.id}/jobs/{{job_id}}")(get_job_ws)
+    router.websocket(f"/websocket/{module.id}/jobs/{{job_id}}/")(get_job_ws)
 
-    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}/results")(get_results_ws)
-    router.websocket(f"/websocket/{module.id}" "/jobs/{job_id}/results/")(get_results_ws)
+    router.websocket(f"/websocket/{module.id}/jobs/{{job_id}}/results")(get_results_ws)
+    router.websocket(f"/websocket/{module.id}/jobs/{{job_id}}/results/")(get_results_ws)
 
     return router
