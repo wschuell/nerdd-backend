@@ -87,7 +87,7 @@ class SaveResultToDb(Action[ResultMessage]):
             translated_sources = await asyncio.gather(
                 *(get_source_by_id(source_id, self.repository) for source_id in message.source)
             )
-            message.source = [s.filename for s in translated_sources if s is not None]
+            message.source = [s for s in translated_sources if s is not None]
 
         # replace all file paths with urls
         result = message.model_dump()
