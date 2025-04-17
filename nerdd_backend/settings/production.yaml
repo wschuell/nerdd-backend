@@ -6,6 +6,8 @@ host: 0.0.0.0
 port: 8000
 root_path: /api
 
+quota_anonymous: 1_000_000
+
 page_size_molecular_property_prediction: 100
 page_size_atom_property_prediction: 10
 page_size_derivative_property_prediction: 10
