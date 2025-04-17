@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.0.6 (2025-04-17)
+
+### Fixes
+
+* fix: Bump version of nerdd-module and nerdd-link ([`02ef0dd`](https://github.com/molinfo-vienna/nerdd-backend/commit/02ef0dd565a1a7ec50d96bf573b19256311f5a2f))
+
+* fix: Rewrite file paths of large properties ([`f617e26`](https://github.com/molinfo-vienna/nerdd-backend/commit/f617e26a9392b74978d053f460cd908c904f2637))
+
+* fix: Add file router to main ([`42f45ab`](https://github.com/molinfo-vienna/nerdd-backend/commit/42f45ab55e0a827a8f691a39a5e07a8eb7bb25a8))
+
+* fix: Implement file router ([`61204c8`](https://github.com/molinfo-vienna/nerdd-backend/commit/61204c844dcc03e428c7167fa73458038bc12bea))
+
+### Unknown
+
+* Merge pull request #28 from shirte/main
+
+Handle file paths of large properties that were stored on disk ([`2f9a134`](https://github.com/molinfo-vienna/nerdd-backend/commit/2f9a134967e135b0646913369ae9448fd772a681))
+
+
 ## v0.0.5 (2025-04-12)
 
 ### Fixes
