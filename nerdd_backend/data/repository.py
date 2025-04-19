@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import AsyncIterable, List, Optional, Tuple
 
-from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
+from ..models import AnonymousUser, Job, JobInternal, JobUpdate, Module, Result, Source, User
 
 __all__ = ["Repository"]
 
@@ -29,12 +29,6 @@ class Repository(ABC):
 
     @abstractmethod
     async def get_module_by_id(self, module_id) -> Module:
-        """
-        Returns
-        -------
-        dict
-            The module with the given id or None if not found
-        """
         pass
 
     @abstractmethod
@@ -112,4 +106,19 @@ class Repository(ABC):
         start_mol_id: Optional[int] = None,
         end_mol_id: Optional[int] = None,
     ) -> AsyncIterable[Tuple[Optional[Result], Optional[Result]]]:
+        pass
+
+    #
+    # USERS
+    #
+    @abstractmethod
+    async def get_user_by_ip_address(self, ip_address: str) -> AnonymousUser:
+        pass
+
+    @abstractmethod
+    async def create_user(self, user: User) -> User:
+        pass
+
+    @abstractmethod
+    async def get_recent_jobs_by_user(self, user: User, num_seconds: int) -> List[JobInternal]:
         pass
