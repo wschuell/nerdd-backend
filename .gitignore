@@ -168,5 +168,4 @@ cython_debug/
 outputs/
 
 # test media directory
-data/
 media/

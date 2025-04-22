@@ -28,7 +28,7 @@ python -m nerdd_backend.main --config-name development
 python -m nerdd_backend.main --config-name development ++mock_infra=false
 
 # set storage directory
-python -m nerdd_backend.main --config-name development ++media_root=./data
+python -m nerdd_backend.main --config-name development ++media_root=./media
 
 # run on existing kafka cluster as communication channel and rethinkdb database backend
 # (see all options in config files in settings folder)
