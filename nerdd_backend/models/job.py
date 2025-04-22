@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 __all__ = ["Job", "JobCreate", "JobPublic", "JobUpdate", "JobInternal", "OutputFile"]
 
@@ -25,6 +25,7 @@ class Job(BaseModel):
 
 class JobInternal(Job):
     user_id: Optional[str] = None
+    referer: Optional[str] = None
     checkpoints_processed: List[int] = []
     num_checkpoints_total: Optional[int] = None
     output_formats: List[str] = []
