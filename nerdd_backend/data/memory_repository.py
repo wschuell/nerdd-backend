@@ -71,15 +71,14 @@ class MemoryRepository(Repository):
             if (old is not None and old.id == job_id) or (new is not None and new.id == job_id):
                 yield (old, new)
 
-    async def create_job(self, job: Job) -> JobInternal:
+    async def create_job(self, job: JobInternal) -> JobInternal:
         async with self.transaction_lock:
             try:
                 await self.get_job_by_id(job.id)
-                raise RecordAlreadyExistsError(Job, job.id)
+                raise RecordAlreadyExistsError(JobInternal, job.id)
             except RecordNotFoundError:
-                result = JobInternal(**job.model_dump())
-                self.jobs.append(result)
-                return result
+                self.jobs.append(job)
+                return job
 
     async def update_job(self, job_update: JobUpdate) -> JobInternal:
         async with self.transaction_lock:
