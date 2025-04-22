@@ -1,11 +1,12 @@
 import math
+from typing import Optional
 from uuid import uuid4
 
-from fastapi import APIRouter, Body, HTTPException, Request
+from fastapi import APIRouter, Body, Header, HTTPException, Request
 from fastapi.responses import FileResponse
 from nerdd_link import FileSystem, JobMessage
 
-from ..data import RecordNotFoundError
+from ..data import RecordNotFoundError, Repository
 from ..models import Job, JobCreate, JobInternal, JobPublic, OutputFile
 from ..util import CompressedSet
 from .users import check_quota, get_user
@@ -53,9 +54,13 @@ async def augment_job(job: JobInternal, request: Request) -> JobPublic:
 
 @jobs_router.post("/", include_in_schema=False)
 @jobs_router.post("")
-async def create_job(job: JobCreate = Body(), request: Request = None):
+async def create_job(
+    job: JobCreate = Body(),
+    referer: Optional[str] = Header(None, include_in_schema=False),
+    request: Request = None,
+) -> JobPublic:
     app = request.app
-    repository = app.state.repository
+    repository: Repository = app.state.repository
     channel = app.state.channel
 
     job_id = uuid4()
@@ -93,9 +98,10 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
     except RecordNotFoundError as e:
         raise HTTPException(status_code=404, detail="Source not found") from e
 
-    job_new = Job(
+    job_new = JobInternal(
         id=str(job_id),
         user_id=user.id,
+        referer=referer,
         job_type=job.job_type,
         source_id=job.source_id,
         params=job.params,
