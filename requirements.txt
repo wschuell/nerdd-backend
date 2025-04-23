@@ -12,3 +12,4 @@ pydantic==2.11.0
 python-multipart==0.0.20
 rethinkdb==2.4.10.post1
 uvicorn[standard]==0.23.2
+altcha==0.1.9
