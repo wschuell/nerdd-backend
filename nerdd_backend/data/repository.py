@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import AsyncIterable, List, Optional, Tuple
 
-from ..models import AnonymousUser, JobInternal, JobUpdate, Module, Result, Source, User
+from ..models import AnonymousUser, Challenge, JobInternal, JobUpdate, Module, Result, Source, User
 
 __all__ = ["Repository"]
 
@@ -121,4 +122,23 @@ class Repository(ABC):
 
     @abstractmethod
     async def get_recent_jobs_by_user(self, user: User, num_seconds: int) -> List[JobInternal]:
+        pass
+
+    #
+    # CHALLENGES (CAPTCHAS)
+    #
+    @abstractmethod
+    async def get_challenge_by_salt(self, salt: str) -> Challenge:
+        pass
+
+    @abstractmethod
+    async def create_challenge(self, challenge: Challenge) -> Challenge:
+        pass
+
+    @abstractmethod
+    async def delete_challenge_by_id(self, id: str) -> None:
+        pass
+
+    @abstractmethod
+    async def delete_expired_challenges(self, deadline: datetime) -> None:
         pass
