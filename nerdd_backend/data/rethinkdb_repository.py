@@ -64,6 +64,7 @@ class RethinkDbRepository(Repository):
         await self.create_jobs_table()
         await self.create_results_table()
         await self.create_users_table()
+        await self.create_challenges_table()
 
         # create an index on job_id in results table
         try:
@@ -474,6 +475,12 @@ class RethinkDbRepository(Repository):
     #
     # CHALLENGES
     #
+    async def create_challenges_table(self) -> None:
+        try:
+            await self.r.table_create("challenges", primary_key="id").run(self.connection)
+        except ReqlOpFailedError:
+            pass
+
     async def create_challenge(self, challenge: Challenge) -> Challenge:
         result = await (
             self.r.table("challenges")
