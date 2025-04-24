@@ -1,6 +1,7 @@
 import base64
 import datetime
 import json
+from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
 import altcha
@@ -22,13 +23,12 @@ async def create_challenge(request: Request = None):
     repository = app.state.repository
 
     # delete all expired challenges
-    await repository.delete_expired_challenges(datetime.datetime.now())
+    await repository.delete_expired_challenges(datetime.now(timezone.utc))
 
     # create new altcha challenge
     options = altcha.ChallengeOptions(
         expires=(
-            datetime.datetime.now()
-            + datetime.timedelta(seconds=config.challenge_expiration_seconds)
+            datetime.now(timezone.utc) + timedelta(seconds=config.challenge_expiration_seconds)
         ),
         max_number=config.challenge_difficulty,
         hmac_key=config.challenge_hmac_key,
@@ -59,11 +59,11 @@ async def verify_solution(
     repository: Repository = app.state.repository
 
     # delete all expired challenges
-    await repository.delete_expired_challenges(datetime.datetime.now())
+    await repository.delete_expired_challenges(datetime.now(timezone.utc))
 
     # check that the solution is valid
     valid, error = altcha.verify_solution(
-        payload, hmac_key=config.challenge_hmac_key, check_expires=True
+        payload, hmac_key=config.challenge_hmac_key, check_expires=False
     )
 
     if not valid:
