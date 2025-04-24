@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+from datetime import datetime
 from typing import Any, AsyncIterable, Dict, List, Optional, Tuple
 
 from rethinkdb import RethinkDB
@@ -8,6 +9,7 @@ from rethinkdb.errors import ReqlOpFailedError
 
 from ..models import (
     AnonymousUser,
+    Challenge,
     Job,
     JobInternal,
     JobUpdate,
@@ -468,3 +470,48 @@ class RethinkDbRepository(Repository):
         )
 
         return [JobInternal(**item) for item in cursor]
+
+    #
+    # CHALLENGES
+    #
+    async def create_challenge(self, challenge: Challenge) -> Challenge:
+        result = await (
+            self.r.table("challenges")
+            .insert(challenge.model_dump(), conflict="error", return_changes=True)
+            .run(self.connection)
+        )
+
+        if len(result["changes"]) == 0:
+            raise RecordAlreadyExistsError(Challenge, challenge.id)
+
+        return Challenge(**result["changes"][0]["new_val"])
+
+    async def get_challenge_by_salt(self, salt: str) -> Challenge:
+        result = (
+            await self.r.table("challenges")
+            .filter(lambda challenge: challenge["salt"] == salt)
+            .run(self.connection)
+        )
+
+        if result is None:
+            raise RecordNotFoundError(Challenge, salt)
+
+        challenges = [Challenge(**item) async for item in result]
+        if len(challenges) == 0:
+            raise RecordNotFoundError(Challenge, salt)
+
+        return challenges[0]
+
+    async def delete_challenge_by_id(self, id: str) -> None:
+        result = await self.r.table("challenges").get(id).delete().run(self.connection)
+
+        if result["deleted"] == 0:
+            raise RecordNotFoundError(Challenge, id)
+
+    async def delete_expired_challenges(self, deadline: datetime) -> None:
+        await (
+            self.r.table("challenges")
+            .filter(lambda challenge: challenge["expires_at"] < deadline)
+            .delete()
+            .run(self.connection)
+        )
