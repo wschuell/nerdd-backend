@@ -1,6 +1,5 @@
+from nerdd_link.tests import async_step
 from pytest_bdd import given
-
-from .async_step import async_step
 
 
 @given("a mocked channel")

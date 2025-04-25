@@ -7,11 +7,10 @@ import pytest_asyncio
 from asgi_lifespan import LifespanManager
 from fastapi.testclient import TestClient
 from hydra import compose, initialize
+from nerdd_link.tests import async_step
 from pytest_bdd import parsers, then, when
 
 from nerdd_backend.main import create_app
-
-from .async_step import async_step
 
 logger = logging.getLogger(__name__)
 
