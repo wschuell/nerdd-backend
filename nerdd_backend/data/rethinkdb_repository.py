@@ -28,11 +28,6 @@ __all__ = ["RethinkDbRepository"]
 logger = logging.getLogger(__name__)
 
 
-def hash_object(obj: Dict[str, Any]) -> str:
-    obj_str = json.dumps(obj, sort_keys=True)
-    return hashlib.sha256(obj_str.encode("utf-8")).hexdigest()
-
-
 class RethinkDbRepository(Repository):
     def __init__(self, host: str, port: int, database_name: str) -> None:
         self.r = RethinkDB()
