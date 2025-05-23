@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.0.7 (2025-05-23)
+
+### Fixes
+
+* fix: Update build-container.yml to support arm64 ([`6e151d3`](https://github.com/molinfo-vienna/nerdd-backend/commit/6e151d304c68b673c2fd10e198d1f092c3bfb039))
+
+### Unknown
+
+* Update build-container.yml to support arm64 ([`eb029e3`](https://github.com/molinfo-vienna/nerdd-backend/commit/eb029e3a4ec1d9f90e25778cd641c2396855ba97))
+
+
 ## v0.0.6 (2025-04-17)
 
 ### Fixes
