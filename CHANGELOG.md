@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.0.8 (2025-05-23)
+
+### Fixes
+
+* fix: Update Dockerfile with more generic image to support arm64 ([`d81fe42`](https://github.com/molinfo-vienna/nerdd-backend/commit/d81fe42872dbbdf5459ef7179c52698b2b50ee6a))
+
+
 ## v0.0.7 (2025-05-23)
 
 ### Fixes
