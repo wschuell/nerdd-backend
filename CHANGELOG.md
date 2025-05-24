@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.0.9 (2025-05-24)
+
+### Fixes
+
+* fix: Let fastapi figure out urls in response objects ([`35b350c`](https://github.com/molinfo-vienna/nerdd-backend/commit/35b350cfbd8b3965b89977df2ae6bc018b215903))
+
+* fix: Make fastapi aware of proxy headers ([`fe5ae62`](https://github.com/molinfo-vienna/nerdd-backend/commit/fe5ae62572ca136a2821532ae5057d8b328879a7))
+
+* fix: Fix typo ([`2c16f32`](https://github.com/molinfo-vienna/nerdd-backend/commit/2c16f3279652e2240e9a814dbaad34cad965491e))
+
+* fix: Add routes with trailing slash ([`c2ff026`](https://github.com/molinfo-vienna/nerdd-backend/commit/c2ff02610bd303de09d558e597b5ae29e759de43))
+
+### Unknown
+
+* Merge pull request #29 from shirte/main
+
+Make fastapi aware of proxy headers ([`a20c066`](https://github.com/molinfo-vienna/nerdd-backend/commit/a20c0666b690deb06a2a3f4e746c1019143aa326))
+
+
 ## v0.0.8 (2025-05-23)
 
 ### Fixes
