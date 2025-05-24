@@ -139,21 +139,25 @@ def get_dynamic_router(module: Module):
             request,
         )
 
+    router.post(f"/{module.id}" "/jobs/", include_in_schema=False)(create_complex_job)
     router.post(f"/{module.id}" "/jobs")(create_complex_job)
 
     #
     # GET /jobs/{job_id}
     #
+    router.get(f"/{module.id}" "/jobs/{job_id}/", include_in_schema=False)(get_job)
     router.get(f"/{module.id}" "/jobs/{job_id}")(get_job)
 
     #
     # DELETE /jobs/{job_id}
     #
+    router.delete(f"/{module.id}" "/jobs/{job_id}/", include_in_schema=False)(delete_job)
     router.delete(f"/{module.id}" "/jobs/{job_id}")(delete_job)
 
     #
     # GET /jobs/{job_id}/results/{page}
     #
+    router.get(f"/{module.id}" "/jobs/{job_id}/results/", include_in_schema=False)(get_results)
     router.get(f"/{module.id}" "/jobs/{job_id}/results")(get_results)
 
     #

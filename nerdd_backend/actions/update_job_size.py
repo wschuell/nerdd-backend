@@ -37,7 +37,7 @@ class UpdateJobSize(Action[LogMessage]):
                 # send request to write output files
                 output_formats = self.config.output_formats
                 for output_format in output_formats:
-                    await self.channel.serialization_request_topic().send(
+                    await self.channel.serialization_requests_topic().send(
                         SerializationRequestMessage(
                             job_id=message.job_Id,
                             job_type=job.job_type,
