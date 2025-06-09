@@ -191,8 +191,7 @@ class RethinkDbRepository(Repository):
         except ReqlOpFailedError:
             pass
 
-    async def create_job(self, job: Job) -> JobInternal:
-        job = JobInternal(**job.model_dump())
+    async def create_job(self, job: JobInternal) -> JobInternal:
         result = await (
             self.r.table("jobs")
             .insert(job.model_dump(), conflict="error", return_changes=True)

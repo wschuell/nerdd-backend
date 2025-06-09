@@ -2,8 +2,19 @@ import json
 import logging
 from typing import List, Optional
 
-from fastapi import APIRouter, Body, Depends, File, HTTPException, Query, Request, UploadFile
+from fastapi import (
+    APIRouter,
+    Body,
+    Depends,
+    File,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+)
 from pydantic import create_model, model_validator
+from stringcase import pascalcase
 
 from ..models import JobCreate, Module
 from .jobs import create_job, delete_job, get_job
@@ -49,32 +60,34 @@ def get_dynamic_router(module: Module):
     # module will be hidden if visible is set to False
     router = APIRouter(tags=[module.id], include_in_schema=module.visible)
 
-    #
-    # GET /jobs
-    # query parameters:
-    #   - input: list of strings (SMILES, InCHI)
-    #   - all params from module (e.g. metabolism_phase)
-    #
     field_definitions = dict(
         **{p.name: get_query_param(p) for p in module.job_parameters},
     )
+    module_name = pascalcase(module.id)
     QueryModelGet = create_model(
-        "QueryModel",
+        f"{module_name}JobCreate",
         **field_definitions,
     )
     QueryModelPost = create_model(
-        "QueryModelForm",
+        f"{module_name}ComplexJobCreate",
         __validators__={"validate_to_json": model_validator(mode="before")(validate_to_json)},
         inputs=(List[str], []),
         sources=(List[str], []),
         **field_definitions,
     )
 
+    #
+    # GET /jobs
+    # query parameters:
+    #   - input: list of strings (SMILES, InCHI)
+    #   - all params from module (e.g. metabolism_phase)
+    #
     async def _create_job(
         inputs: List[str],
         sources: List[str],
         files: List[UploadFile],
         params: dict,
+        referer: Optional[str] = None,
         request: Request = None,
     ):
         if "job_type" in params and params["job_type"] != module.id:
@@ -97,6 +110,7 @@ def get_dynamic_router(module: Module):
                 source_id=result_source.id,
                 params={k: v for k, v in params.items() if k in field_definitions},
             ),
+            referer=referer,
             request=request,
         )
 
@@ -107,13 +121,14 @@ def get_dynamic_router(module: Module):
         inputs: Optional[List[str]] = Query(default=None),
         sources: Optional[List[str]] = Query(default=None),
         params: QueryModelGet = Depends(),
+        referer: Optional[str] = Header(None, include_in_schema=False),
         request: Request = None,
     ):
         if inputs is None:
             inputs = []
         if sources is None:
             sources = []
-        return await _create_job(inputs, sources, [], params.model_dump(), request)
+        return await _create_job(inputs, sources, [], params.model_dump(), referer, request)
 
     router.get(f"/{module.id}/jobs/", include_in_schema=False)(create_simple_job)
     router.get(f"/{module.id}/jobs")(create_simple_job)
@@ -127,6 +142,7 @@ def get_dynamic_router(module: Module):
             description='Files to upload. Uncheck "Send empty value" if sending from Swagger UI.',
         ),
         job: QueryModelPost = Body(),
+        referer: Optional[str] = Header(None, include_in_schema=False),
         request: Request = None,
     ):
         # files can be None if no files are uploaded (even though the type suggests otherwise)
@@ -138,6 +154,7 @@ def get_dynamic_router(module: Module):
             job.sources,
             files,
             {k: v for k, v in job.dict().items() if k not in ["inputs", "sources"]},
+            referer,
             request,
         )
 

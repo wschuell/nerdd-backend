@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import AsyncIterable, List, Optional, Tuple
 
-from ..models import AnonymousUser, Job, JobInternal, JobUpdate, Module, Result, Source, User
+from ..models import AnonymousUser, JobInternal, JobUpdate, Module, Result, Source, User
 
 __all__ = ["Repository"]
 
@@ -28,7 +28,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def get_module_by_id(self, module_id) -> Module:
+    async def get_module_by_id(self, module_id: str) -> Module:
         pass
 
     @abstractmethod
@@ -49,7 +49,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def create_job(self, job: Job) -> JobInternal:
+    async def create_job(self, job: JobInternal) -> JobInternal:
         pass
 
     @abstractmethod
@@ -61,7 +61,7 @@ class Repository(ABC):
         pass
 
     @abstractmethod
-    async def delete_job_by_id(self, job_id) -> None:
+    async def delete_job_by_id(self, job_id: str) -> None:
         pass
 
     #
