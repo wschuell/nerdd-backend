@@ -2,8 +2,11 @@ defaults:
   - channel: memory
   - db: memory
 
-host: localhost
+host: 0.0.0.0
 port: 8000
+root_path: null
+
+quota_anonymous: 1_000_000
 
 page_size_molecular_property_prediction: 5
 page_size_atom_property_prediction: 3

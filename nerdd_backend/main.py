@@ -128,7 +128,7 @@ async def create_app(cfg: DictConfig):
         except asyncio.CancelledError:
             logger.info("Tasks successfully cancelled")
 
-    app = FastAPI(lifespan=global_lifespan, root_path="/api")
+    app = FastAPI(lifespan=global_lifespan, root_path=cfg.root_path)
     app.state.repository = repository = get_repository(cfg)
     app.state.channel = channel = get_channel(cfg)
     app.state.filesystem = FileSystem(cfg.media_root)

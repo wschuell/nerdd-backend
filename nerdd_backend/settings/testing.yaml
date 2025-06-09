@@ -4,6 +4,9 @@ defaults:
 
 host: localhost
 port: 8000
+root_path: null
+
+quota_anonymous: 1_000_000
 
 page_size_molecular_property_prediction: 5
 page_size_atom_property_prediction: 3

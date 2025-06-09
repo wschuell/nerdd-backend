@@ -1,9 +1,10 @@
+import time
 from asyncio import Lock
 from typing import AsyncIterable, List, Optional, Tuple
 
 from nerdd_link.utils import ObservableList
 
-from ..models import Job, JobInternal, JobUpdate, Module, Result, Source
+from ..models import AnonymousUser, Job, JobInternal, JobUpdate, Module, Result, Source, User
 from ..util import CompressedSet
 from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
@@ -24,6 +25,7 @@ class MemoryRepository(Repository):
         self.modules = ObservableList[Module]()
         self.sources = ObservableList[Source]()
         self.results = ObservableList[Result]()
+        self.users = ObservableList[User]()
 
     #
     # MODULES
@@ -188,3 +190,36 @@ class MemoryRepository(Repository):
 
     async def get_num_processed_entries_by_job_id(self, job_id: str) -> int:
         return len(await self.get_all_results_by_job_id(job_id))
+
+    #
+    # USERS
+    #
+    async def get_user_by_ip_address(self, ip_address: str) -> User:
+        try:
+            return next((user for user in self.users.get_items() if user.ip_address == ip_address))
+        except StopIteration as e:
+            raise RecordNotFoundError(User, ip_address) from e
+
+    # Note: this method is not mandatory for the repository interface.
+    async def get_user_by_id(self, id: str) -> User:
+        try:
+            return next((user for user in self.users.get_items() if user.id == id))
+        except StopIteration as e:
+            raise RecordNotFoundError(User, id) from e
+
+    async def create_user(self, user: User) -> User:
+        async with self.transaction_lock:
+            try:
+                await self.get_user_by_id(user.id)
+                raise RecordAlreadyExistsError(User, user.id)
+            except RecordNotFoundError:
+                result = AnonymousUser(**user.model_dump())
+                self.users.append(result)
+                return result
+
+    async def get_recent_jobs_by_user(self, user, num_seconds):
+        return [
+            job
+            for job in self.jobs.get_items()
+            if job.user_id == user.id and (job.created_at.timestamp() > (time.time() - num_seconds))
+        ]

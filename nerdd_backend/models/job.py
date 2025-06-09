@@ -24,6 +24,7 @@ class Job(BaseModel):
 
 
 class JobInternal(Job):
+    user_id: Optional[str] = None
     checkpoints_processed: List[int] = []
     num_checkpoints_total: Optional[int] = None
     output_formats: List[str] = []

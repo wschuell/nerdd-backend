@@ -8,6 +8,7 @@ from nerdd_link import FileSystem, JobMessage
 from ..data import RecordNotFoundError
 from ..models import Job, JobCreate, JobInternal, JobPublic, OutputFile
 from ..util import CompressedSet
+from .users import check_quota, get_user
 
 __all__ = ["jobs_router"]
 
@@ -59,6 +60,10 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
 
     job_id = uuid4()
 
+    # get user from request and check quota
+    user = await get_user(request)
+    await check_quota(user, request)
+
     # check if module exists
     try:
         module = await repository.get_module_by_id(job.job_type)
@@ -90,6 +95,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
 
     job_new = Job(
         id=str(job_id),
+        user_id=user.id,
         job_type=job.job_type,
         source_id=job.source_id,
         params=job.params,
@@ -105,6 +111,7 @@ async def create_job(job: JobCreate = Body(), request: Request = None):
     await channel.jobs_topic().send(
         JobMessage(
             id=str(job_id),
+            # user_id=user.id,
             job_type=job.job_type,
             source_id=job.source_id,
             params=job.params,
