@@ -1,6 +1,53 @@
 # CHANGELOG
 
 
+## v0.1.0 (2025-06-09)
+
+### Code Style
+
+* style: Use ./media as the test media directory ([`4d0cd53`](https://github.com/molinfo-vienna/nerdd-backend/commit/4d0cd53d38d62d3380be7bee7857573ebe01f7e6))
+
+### Features
+
+* feat: Implement quota check ([`2fed40d`](https://github.com/molinfo-vienna/nerdd-backend/commit/2fed40dc92f71abf19c2dd3f1b1fc08422775923))
+
+* feat: Add user_id field to job model ([`cd8a92c`](https://github.com/molinfo-vienna/nerdd-backend/commit/cd8a92ce8e23f5745de03f2ed6ef2289e25d575a))
+
+* feat: Add user model ([`7d8b5b6`](https://github.com/molinfo-vienna/nerdd-backend/commit/7d8b5b647f4dc302bca78e1d7b500179e01fb8a8))
+
+### Fixes
+
+* fix: Use CLI args in Dockerfile ([`2085e5b`](https://github.com/molinfo-vienna/nerdd-backend/commit/2085e5b8ed3b07f551fb96eeaf70e0441db013ef))
+
+* fix: Implement repository methods in RethinkDbRepository ([`35c16fc`](https://github.com/molinfo-vienna/nerdd-backend/commit/35c16fcd8a50fa3d6e82cacbd0730425bca73c14))
+
+* fix: Implement repository methods in MemoryRepository ([`d31ed31`](https://github.com/molinfo-vienna/nerdd-backend/commit/d31ed315876cf9791c7875cb9f5b17c6756991f8))
+
+* fix: Define repository methods for users ([`4c591e5`](https://github.com/molinfo-vienna/nerdd-backend/commit/4c591e554ab2cb736ef87cfb23e6358a5166c7a6))
+
+* fix: Check user quota on job creation ([`eb4c52d`](https://github.com/molinfo-vienna/nerdd-backend/commit/eb4c52d225261297fe4e3ec2ee9079dc313b4184))
+
+* fix: Add quota field to configs ([`0cc16b1`](https://github.com/molinfo-vienna/nerdd-backend/commit/0cc16b1f79baabb7bfff801ba7ffc3ae68e6af3b))
+
+* fix: Fix typo ([`7f389ed`](https://github.com/molinfo-vienna/nerdd-backend/commit/7f389ed7de59ccf90ac5474d8215094e1a9da569))
+
+* fix: Simplify files parameter in create_complex_job routes ([`5e760ea`](https://github.com/molinfo-vienna/nerdd-backend/commit/5e760ea6b80f1399e767de5f97fdd3e9042c03e0))
+
+* fix: Process source files correctly ([`ac4347d`](https://github.com/molinfo-vienna/nerdd-backend/commit/ac4347d0beb4cdafcb8508005bde928431cfa5ab))
+
+* fix: Use None when encountering invalid sources ([`4af5d05`](https://github.com/molinfo-vienna/nerdd-backend/commit/4af5d05871e3ef4c9793c3506bf97b0d0a70d807))
+
+* fix: Add ./data to gitignore ([`3da26e2`](https://github.com/molinfo-vienna/nerdd-backend/commit/3da26e28b7589935a88236eed9524c15a7148626))
+
+* fix: Read api base path from config ([`3721b07`](https://github.com/molinfo-vienna/nerdd-backend/commit/3721b0788586c8d763b5e7afe81571172c7517b3))
+
+### Unknown
+
+* Merge pull request #30 from shirte/main
+
+Add quota check ([`aac04f6`](https://github.com/molinfo-vienna/nerdd-backend/commit/aac04f60b5d4007f2fe9890f9c9e6be4fef56614))
+
+
 ## v0.0.9 (2025-05-24)
 
 ### Fixes
