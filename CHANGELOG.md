@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.1.1 (2025-06-09)
+
+### Fixes
+
+* fix: Accept referer header and store in job records ([`bce4dcd`](https://github.com/molinfo-vienna/nerdd-backend/commit/bce4dcde35bdc68239666f69eecc7a4d74f39304))
+
+* fix: Add referer field to JobInternal model ([`2ebc586`](https://github.com/molinfo-vienna/nerdd-backend/commit/2ebc5864391288d2b167eefc05f04b381cb72049))
+
+* fix: Use JobInternal instead of Job model in create_job ([`52278f2`](https://github.com/molinfo-vienna/nerdd-backend/commit/52278f2b05ef8b8a9bfdf17962afd6b0a37cc3a8))
+
+### Unknown
+
+* Merge pull request #31 from shirte/main
+
+Accept referer header and store in job records ([`99e8c30`](https://github.com/molinfo-vienna/nerdd-backend/commit/99e8c30eabf43a60ff015dfda26351c0734b26b3))
+
+
 ## v0.1.0 (2025-06-09)
 
 ### Code Style
