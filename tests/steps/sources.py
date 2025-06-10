@@ -1,8 +1,7 @@
 import os
 
-from pytest_bdd import given, parsers, then, when
-
-from .async_step import async_step
+from nerdd_link.tests import async_step
+from pytest_bdd import parsers, then
 
 
 @then("the source file in the response was created")

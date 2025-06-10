@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import time
 from asyncio import Lock
 from collections import OrderedDict
 
