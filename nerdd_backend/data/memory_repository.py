@@ -1,10 +1,21 @@
 import time
 from asyncio import Lock
+from datetime import datetime
 from typing import AsyncIterable, List, Optional, Tuple
 
 from nerdd_link.utils import ObservableList
 
-from ..models import AnonymousUser, Job, JobInternal, JobUpdate, Module, Result, Source, User
+from ..models import (
+    AnonymousUser,
+    Challenge,
+    Job,
+    JobInternal,
+    JobUpdate,
+    Module,
+    Result,
+    Source,
+    User,
+)
 from ..util import CompressedSet
 from .exceptions import RecordAlreadyExistsError, RecordNotFoundError
 from .repository import Repository
@@ -26,6 +37,7 @@ class MemoryRepository(Repository):
         self.sources = ObservableList[Source]()
         self.results = ObservableList[Result]()
         self.users = ObservableList[User]()
+        self.challenges = ObservableList[Challenge]()
 
     #
     # MODULES
@@ -222,3 +234,39 @@ class MemoryRepository(Repository):
             for job in self.jobs.get_items()
             if job.user_id == user.id and (job.created_at.timestamp() > (time.time() - num_seconds))
         ]
+
+    #
+    # CHALLENGES
+    #
+    async def get_challenge_by_salt(self, salt: str) -> Challenge:
+        try:
+            return next((challenge for challenge in self.challenges if challenge.salt == salt))
+        except StopIteration as e:
+            raise RecordNotFoundError(Challenge, salt) from e
+
+    # Note: this method is not mandatory for the repository interface.
+    async def get_challenge_by_id(self, id: str) -> User:
+        try:
+            return next((challenge for challenge in self.challenges if challenge.id == id))
+        except StopIteration as e:
+            raise RecordNotFoundError(Challenge, id) from e
+
+    async def create_challenge(self, challenge: Challenge) -> Challenge:
+        async with self.transaction_lock:
+            try:
+                await self.get_challenge_by_id(challenge.id)
+                raise RecordAlreadyExistsError(Challenge, challenge.id)
+            except RecordNotFoundError:
+                self.challenges.append(challenge)
+                return challenge
+
+    async def delete_challenge_by_id(self, id: str) -> None:
+        async with self.transaction_lock:
+            existing_challenge = await self.get_challenge_by_id(id)
+            self.challenges.remove(existing_challenge)
+
+    async def delete_expired_challenges(self, deadline: datetime) -> None:
+        async with self.transaction_lock:
+            for challenge in self.challenges:
+                if challenge.expires_at < deadline:
+                    self.challenges.remove(challenge)

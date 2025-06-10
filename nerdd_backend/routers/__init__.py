@@ -1,3 +1,4 @@
+from .challenges import *
 from .dynamic import *
 from .files import *
 from .jobs import *

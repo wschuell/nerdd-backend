@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 
 import hydra
@@ -9,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from nerdd_link import FileSystem, KafkaChannel, MemoryChannel, SystemMessage
 from nerdd_link.utils import async_to_sync
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig, OmegaConf, open_dict
 
 from .actions import (
     ProcessSerializationResult,
@@ -21,6 +22,7 @@ from .actions import (
 from .data import MemoryRepository, RethinkDbRepository
 from .lifespan import ActionLifespan, CreateModuleLifespan
 from .routers import (
+    challenges_router,
     files_router,
     get_dynamic_router,
     jobs_router,
@@ -70,6 +72,12 @@ async def create_app(cfg: DictConfig):
         ),
         CreateModuleLifespan(),
     ]
+
+    # Set default values for configuration options if not provided
+    with open_dict(cfg):
+        cfg.challenge_hmac_key = getattr(cfg, "challenge_hmac_key", os.urandom(32).hex())
+        cfg.challenge_difficulty = getattr(cfg, "challenge_difficulty", 1_000_000)
+        cfg.challenge_expiration_seconds = getattr(cfg, "challenge_expiration_seconds", 3600)
 
     if cfg.mock_infra:
         from nerdd_link import (
@@ -167,6 +175,7 @@ async def create_app(cfg: DictConfig):
     app.include_router(modules_router)
     app.include_router(websockets_router)
     app.include_router(files_router)
+    app.include_router(challenges_router)
 
     for module in await repository.get_all_modules():
         app.include_router(get_dynamic_router(module))
