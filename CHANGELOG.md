@@ -1,6 +1,39 @@
 # CHANGELOG
 
 
+## v0.2.0 (2025-06-10)
+
+### Features
+
+* feat: Add challenge router to main ([`cc444cc`](https://github.com/molinfo-vienna/nerdd-backend/commit/cc444cc1e8ec85c64e527ae0229fa4d692b0a755))
+
+* feat: Implement challenges router ([`68b7e05`](https://github.com/molinfo-vienna/nerdd-backend/commit/68b7e05a291c6f968d25897f5b4a57a1569ec00a))
+
+### Fixes
+
+* fix: Add timezone to challenge expiration dates ([`d2e0fa7`](https://github.com/molinfo-vienna/nerdd-backend/commit/d2e0fa764ad9dbed3005a3e5dd1db6524fb61e6b))
+
+* fix: Create challenges table ([`8fb34ad`](https://github.com/molinfo-vienna/nerdd-backend/commit/8fb34ade718dd0c7b46904b2a58b4536fe89574a))
+
+* fix: Provide challenge parameters in config files ([`097f1c0`](https://github.com/molinfo-vienna/nerdd-backend/commit/097f1c0ea951475437a4b010816a4b74768bccbe))
+
+* fix: Implement challenge methods in RethinkDbRepository ([`01c3fef`](https://github.com/molinfo-vienna/nerdd-backend/commit/01c3fef7ffb74f1d314d79712ac5d0887c563d2f))
+
+* fix: Implement challenge methods in MemoryRepository ([`dd49598`](https://github.com/molinfo-vienna/nerdd-backend/commit/dd4959838d8b08c47a7aff3f00de89680338be99))
+
+* fix: Add altcha challenge model ([`025c84e`](https://github.com/molinfo-vienna/nerdd-backend/commit/025c84e3ccefc0881d8b08198f58412f2ff4e299))
+
+* fix: Add repository methods for altcha challenges ([`a8b28c1`](https://github.com/molinfo-vienna/nerdd-backend/commit/a8b28c106d8913d88f775f89c259ea04b5fa05a9))
+
+* fix: Add altcha dependency ([`2509d6f`](https://github.com/molinfo-vienna/nerdd-backend/commit/2509d6f6e30ae9e0f6d7d6cf076ed06515ad1bc6))
+
+### Unknown
+
+* Merge pull request #32 from shirte/main
+
+Introduce altcha challenges ([`b0430f9`](https://github.com/molinfo-vienna/nerdd-backend/commit/b0430f956c9ae579483155e74900fd39c9300f7c))
+
+
 ## v0.1.1 (2025-06-09)
 
 ### Fixes
